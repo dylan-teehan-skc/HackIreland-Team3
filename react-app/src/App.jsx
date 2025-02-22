@@ -24,7 +24,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/subscription/:id" element={<SubscriptionDetails />} />
               <Route path="/subscriptions" element={<SubscriptionManager />} />
-              <Route path="/split-subscription" element={<SplitSubscription />} />
+              <Route path="/split" element={<SplitSubscription />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
