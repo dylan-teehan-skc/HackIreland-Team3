@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import "../index.css"; 
+import "../index.css";
 
 const SubscriptionDetails = () => {
-  const { id } = useParams(); // Get subscription ID from URL
+  const { id } = useParams();
 
-  // Placeholder values (Replace with API data)
   const [subscriptionData, setSubscriptionData] = useState({
     serviceName: "Your Netflix Subscription",
     paymentsLog: [
@@ -18,7 +17,6 @@ const SubscriptionDetails = () => {
     nextPaymentDate: "2024-03-01",
   });
 
-  // Uncomment and replace with API call
   /*
   useEffect(() => {
     fetch(`/api/subscription/${id}`)
@@ -29,41 +27,45 @@ const SubscriptionDetails = () => {
   */
 
   return (
-    <div className="subscription-page">
-      {/* Header */}
-      <header className="subscription-header">{subscriptionData.serviceName}</header>
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <header className="text-4xl font-bold mb-8 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+        {subscriptionData.serviceName}
+      </header>
 
-      {/* Main Content Grid */}
-      <div className="subscription-grid">
-        <div className="subscription-card large">
-          <h2>Payments Log</h2>
-          <ul className="payment-list">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold mb-4">Payments Log</h2>
+          <ul className="space-y-2">
             {subscriptionData.paymentsLog.map((log, index) => (
-              <li key={index}>
-                {log.date}: <span className="amount">${log.amount}</span>
+              <li key={index} className="flex justify-between">
+                <span>{log.date}</span>
+                <span className="text-purple-400">${log.amount}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="subscription-card">
-          <h2>Who is Paying?</h2>
-          <p>{subscriptionData.activeUsers}</p>
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold mb-4">Who is Paying?</h2>
+          <p className="text-gray-300">{subscriptionData.activeUsers}</p>
         </div>
 
-        <div className="subscription-card">
-          <h2>Total Spent</h2>
-          <p className="amount">${subscriptionData.totalSpent}</p>
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold mb-4">Total Spent</h2>
+          <p className="text-3xl text-purple-400">${subscriptionData.totalSpent}</p>
         </div>
 
-        <div className="subscription-card">
-          <h2>Upcoming Payment</h2>
-          <p>Next Payment: <span className="highlight">{subscriptionData.nextPaymentDate}</span></p>
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold mb-4">Upcoming Payment</h2>
+          <p className="text-gray-300">
+            Next Payment: <span className="text-purple-400">{subscriptionData.nextPaymentDate}</span>
+          </p>
         </div>
       </div>
 
-      {/* Deactivate Subscription */}
-      <button className="deactivate-button">Deactivate Subscription</button>
+      <button className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
+        Deactivate Subscription
+      </button>
     </div>
   );
 };

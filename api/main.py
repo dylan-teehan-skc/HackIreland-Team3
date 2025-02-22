@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import api.database as database 
 from .models.base import Base
 from .config import get_settings, setup_logging
-from .routes import file_router, card_router, subscription_router, auth_router, webhook_routes
+from .routes import file_router, card_router, subscription_router, auth_router, webhook_routes, group_routes, real_card_routes
 import logging
 
 # Initialize settings and logging
@@ -24,6 +24,9 @@ app.include_router(file_router)
 app.include_router(card_router)
 app.include_router(subscription_router)
 app.include_router(webhook_routes.router)
+app.include_router(group_routes.router)
+app.include_router(real_card_routes.router)
+
 
 # Example of logging usage in main.py
 logger = logging.getLogger(__name__)

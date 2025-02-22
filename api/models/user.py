@@ -8,6 +8,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
+    real_card_id = Column(Integer, ForeignKey('real_cards.id'), unique=True)
 
+    real_card = relationship("RealCard", back_populates="user", uselist=False)
     groups = relationship("Group", back_populates="admin")
-    card_memberships = relationship("CardMember", back_populates="user") 
+    card_memberships = relationship("CardMember", back_populates="user")
