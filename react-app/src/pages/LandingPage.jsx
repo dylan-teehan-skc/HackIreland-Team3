@@ -3,16 +3,19 @@ import { Link } from "react-router-dom";
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-center items-center p-6">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-gray-900 to-gray-900 opacity-75 -z-10"></div>
+
       {/* Main Content */}
-      <div className="text-center max-w-2xl">
+      <div className="text-center max-w-2xl relative z-10">
         {/* Title */}
-        <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent animate-gradient">
           Take Control of Your Subscriptions
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg text-gray-300 mb-8">
+        <p className="text-lg md:text-xl text-gray-300 mb-8">
           SubClub helps you manage, track, and split recurring expenses with ease.
           Never miss a payment again!
         </p>
@@ -21,21 +24,24 @@ const LandingPage = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/dashboard"
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105"
+            className="relative bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
           >
-            Go to Dashboard
+            <span className="relative z-10">Go to Dashboard</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"></span>
           </Link>
           <Link
             to="/subscriptions"
-            className="bg-transparent border-2 border-purple-600 hover:border-purple-700 text-purple-600 hover:text-purple-700 font-semibold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105"
+            className="relative bg-transparent border-2 border-purple-600 hover:border-purple-700 text-purple-600 hover:text-purple-700 font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
           >
-            Manage Subscriptions
+            <span className="relative z-10">Manage Subscriptions</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg opacity-0 hover:opacity-10 transition-opacity duration-300"></span>
           </Link>
         </div>
       </div>
 
-      {/* Optional: Add a decorative gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 opacity-50 -z-10"></div>
+      {/* Animated Blobs */}
+      <div className="absolute w-64 h-64 bg-purple-600 rounded-full opacity-20 blur-3xl animate-blob animation-delay-2000 -top-32 -left-32"></div>
+      <div className="absolute w-64 h-64 bg-pink-600 rounded-full opacity-20 blur-3xl animate-blob animation-delay-4000 -bottom-32 -right-32"></div>
     </div>
   );
 };

@@ -1,26 +1,9 @@
-// app/dashboard/page.tsx
-import {
-    Card,
-    CardHeader,
-    CardTitle,
-    CardContent,
-    CardDescription,
-  } from "@/components/ui/card";
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@/components/ui/table";
-  import { Button } from "@/components/ui/button";
-  import { AreaChart, BarChart } from "recharts";
-  import { useRouter } from "next/navigation";
-  
-  const DashboardPage = () => {
-    const router = useRouter();
-    
+import { AreaChart, BarChart, Area, Bar } from "recharts";
+import { useNavigate } from "react-router-dom";
+
+const DashboardPage = () => {
+    const navigate = useNavigate();
+
     // Sample data - replace with your backend data
     const subscriptions = [
       {
@@ -53,9 +36,9 @@ import {
       (sum, sub) => sum + sub.amount,
       0
     );
-  
-    const handleRowClick = (subscriptionId: string) => {
-      router.push(`/subscriptions/${subscriptionId}`);
+
+    const handleRowClick = (subscriptionId) => {
+        navigate(`/subscriptions/${subscriptionId}`);
     };
   
     return (
@@ -179,6 +162,6 @@ import {
         </Card>
       </div>
     );
-  };
-  
-  export default DashboardPage;
+};
+
+export default DashboardPage;
