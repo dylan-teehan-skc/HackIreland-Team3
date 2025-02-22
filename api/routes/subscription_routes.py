@@ -6,7 +6,11 @@ from api.database import get_db
 from api.services.subscription_parser import process_subscriptions
 import logging
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/subscriptions",
+    tags=["Subscriptions"],
+    responses={404: {"description": "Not found"}}
+)
 logger = logging.getLogger(__name__)
 
 @router.get("/subscriptions/{file_id}")

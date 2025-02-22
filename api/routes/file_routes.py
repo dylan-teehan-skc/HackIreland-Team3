@@ -5,7 +5,11 @@ from api.models import UploadedFile
 from api.database import get_db
 import logging
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/files",
+    tags=["Files"],
+    responses={404: {"description": "Not found"}}
+)
 logger = logging.getLogger(__name__)
 
 @router.post("/upload")

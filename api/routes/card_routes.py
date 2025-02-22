@@ -1,7 +1,11 @@
 from fastapi import APIRouter
 from api.services.cardCreation import create_cardholder, create_virtual_card, get_virtual_card, create_test_card
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/cards",
+    tags=["Cards"],
+    responses={404: {"description": "Not found"}}
+)
 
 @router.post("/create-cardholder")
 async def create_cardholder_endpoint(
