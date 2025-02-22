@@ -1,8 +1,8 @@
-import { AreaChart, BarChart } from "recharts";
-import { useRouter } from "next/navigation";
+import { AreaChart, BarChart, Area, Bar } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
-    const router = useRouter();
+    const navigate = useNavigate();
 
     // Sample data - replace with your backend data
     const subscriptions = [
@@ -38,7 +38,7 @@ const DashboardPage = () => {
     );
 
     const handleRowClick = (subscriptionId) => {
-        router.push(`/subscriptions/${subscriptionId}`);
+        navigate(`/subscriptions/${subscriptionId}`);
     };
 
     return (
