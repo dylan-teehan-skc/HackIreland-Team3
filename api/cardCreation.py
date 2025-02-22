@@ -1,91 +1,132 @@
-from flask import Blueprint, jsonify, request
 import os
-from . import api_bp
-from stripe_utils import create_cardholder, create_virtual_card, get_virtual_card
 import stripe
+from dotenv import load_dotenv
 
-# Create a specific blueprint for card-related operations
-card_bp = Blueprint('cards', __name__)
+# Load environment variables
+load_dotenv()
 
 # Configure Stripe with your secret key
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_51QvI5hG3Gk8hJB4vXcNCEMt78KSxvnY2f39CVnn50f9B5jHDw3w5PIfcMoJkBKJKrIECwC405nWJ7ImQ2gK4z1Jd00sKGAtR43')
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
-
-@api_bp.route('/health')
-def health_check():
-    """Health check endpoint"""
-    return jsonify({"status": "healthy", "message": "API is running"})
-
-
-@card_bp.route('/cardholders', methods=['POST'])
-def create_cardholder_endpoint():
-    """Create a new cardholder for issuing virtual cards"""
-    data = request.get_json()
+def create_cardholder(
+    name: str,
+    email: str,
+    phone_number: str,
+    address_line1: str,
+    city: str,
+    state: str,
+    postal_code: str,
+    country: str = 'US') -> dict:
+    """
+    Create a new cardholder in Stripe.
     
-    result = create_cardholder(
-        name=data.get('name'),
-        email=data.get('email'),
-        phone_number=data.get('phone_number'),
-        address_line1=data.get('address_line1'),
-        city=data.get('city'),
-        state=data.get('state'),
-        postal_code=data.get('postal_code'),
-        country=data.get('country', 'US')
-    )
-    
-    if not result['success']:
-        return jsonify(result), 400
-    return jsonify(result)
-
-@card_bp.route('/virtual-cards', methods=['POST'])
-def create_virtual_card_endpoint():
-    """Create a new virtual card for a cardholder"""
-    data = request.get_json()
-    
-    result = create_virtual_card(cardholder_id=data.get('cardholder_id'))
-    
-    if not result['success']:
-        return jsonify(result), 400
-    return jsonify(result)
-
-@card_bp.route('/virtual-cards/<card_id>', methods=['GET'])
-def get_virtual_card_endpoint(card_id):
-    """Retrieve a virtual card's details"""
-    result = get_virtual_card(card_id=card_id)
-    
-    if not result['success']:
-        return jsonify(result), 400
-    return jsonify(result)
-
-@card_bp.route('/test-card', methods=['POST'])
-def create_test_card():
-    """Create a test virtual card with example values"""
-    # First create a cardholder with example values
-    cardholder_result = create_cardholder(
-        name='John Doe',
-        email='john.doe@example.com',
-        phone_number='+1234567890',
-        address_line1='123 Main St',
-        city='San Francisco',
-        state='CA',
-        postal_code='94105',
-        country='US'
-    )
-    
-    if not cardholder_result['success']:
-        return jsonify(cardholder_result), 400
+    Args:
+        name: Full name of the cardholder
+        email: Email address of the cardholder
+        phone_number: Phone number of the cardholder
+        address_line1: Street address of the cardholder
+        city: City of the cardholder
+        state: State/province of the cardholder
+        postal_code: Postal code of the cardholder
+        country: Country code (default: 'US')
         
-    # Create a virtual card for the cardholder
-    card_result = create_virtual_card(cardholder_id=cardholder_result['cardholder']['id'])
-    
-    if not card_result['success']:
-        return jsonify(card_result), 400
-        
-    return jsonify({
-        'success': True,
-        'cardholder': cardholder_result['cardholder'],
-        'card': card_result['card']
-    })
+    Returns:
+        Dict containing the created cardholder information or error details
+    """
+    try:
+        cardholder = stripe.issuing.Cardholder.create(
+            type='individual',
+            name=name,
+            email=email,
+            phone_number=phone_number,
+            billing={
+                'address': {
+                    'line1': address_line1,
+                    'city': city,
+                    'state': state,
+                    'postal_code': postal_code,
+                    'country': country
+                }
+            }
+        )
+        return {"success": True, "cardholder": cardholder}
+    except stripe.error.StripeError as e:
+        return {"success": False, "error": str(e)}
 
-# Register the card blueprint with the main API blueprint
-api_bp.register_blueprint(card_bp)
+def create_virtual_card(cardholder_id: str) -> dict:
+    """
+    Create a new virtual card for a cardholder.
+    
+    Args:
+        cardholder_id: The ID of the cardholder to create the card for
+        
+    Returns:
+        Dict containing the created virtual card information or error details
+    """
+    try:
+        if if_cardholder_has_cards(cardholder_id):
+            return {"success": False, "error": "Cardholder already has a card"}
+
+        card = stripe.issuing.Card.create(
+            cardholder=cardholder_id,
+            type='virtual',
+            currency='eur',
+            status='active'
+        )
+        return {"success": True, "card": card}
+    except stripe.error.StripeError as e:
+        return {"success": False, "error": str(e)}
+
+def get_virtual_card(card_id: str) -> dict:
+    """
+    Retrieve details of a specific virtual card.
+    
+    Args:
+        card_id: The ID of the virtual card to retrieve
+        
+    Returns:
+        Dict containing the virtual card information or error details
+    """
+    try:
+        card = stripe.issuing.Card.retrieve(card_id)
+        return {"success": True, "card": card}
+    except stripe.error.StripeError as e:
+        return {"success": False, "error": str(e)}
+
+def create_test_card() -> dict:
+    """Create a test virtual card with example values."""
+    # First test if a test cardholder already exists
+    if os.environ.get('TEST_CARDHOLDER_ID') is None:
+
+        cardholder_result = create_cardholder(
+            name=os.environ.get('TEST_CARDHOLDER_NAME'),
+            email=os.environ.get('TEST_CARDHOLDER_EMAIL'),
+            phone_number=os.environ.get('TEST_CARDHOLDER_PHONE'),
+            address_line1=os.environ.get('TEST_CARDHOLDER_ADDRESS'),
+            city=os.environ.get('TEST_CARDHOLDER_CITY'),
+            state=os.environ.get('TEST_CARDHOLDER_STATE'),
+            postal_code=os.environ.get('TEST_CARDHOLDER_POSTAL_CODE'),
+            country=os.environ.get('TEST_CARDHOLDER_COUNTRY')
+        )
+
+        if not cardholder_result["success"]:
+            return cardholder_result
+        
+        os.environ['TEST_CARDHOLDER_ID'] = cardholder_result["cardholder"]["id"]
+    
+    # Then create a virtual card for this cardholder
+    card_result = create_virtual_card(os.environ.get('TEST_CARDHOLDER_ID'))
+    
+    if not card_result["success"]:
+        return card_result
+    
+    return {
+        "success": True,
+        "cardholder": cardholder_result["cardholder"],
+        "card": card_result["card"]
+    }
+
+def if_cardholder_has_cards(cardholder_id: str) -> bool:
+    """Check if a cardholder has any cards."""
+    cards = stripe.issuing.Card.list(cardholder=cardholder_id)
+    return len(cards.data) > 0
