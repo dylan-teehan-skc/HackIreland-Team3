@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { UserIcon } from "@heroicons/react/solid"; // Importing profile icon
+import { UserIcon } from "@heroicons/react/24/solid";
 
 const Header = () => {
   return (
@@ -32,6 +32,13 @@ const Header = () => {
             >
               Dashboard
             </Link>
+            <Link
+              to="/subscriptiondetails"
+              className="text-gray-300 hover:text-white hover:underline"
+            >
+              Subscription
+            </Link>
+            
             <Link
               to="/subscription-manager"
               className="text-gray-300 hover:text-white hover:underline"

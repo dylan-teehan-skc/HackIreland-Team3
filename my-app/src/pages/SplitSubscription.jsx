@@ -1,8 +1,4 @@
 import React, { useState } from "react";
-import { Input } from "./components/ui/input";
-import { Button } from "./components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "./components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "./components/ui/table";
 
 const SplitSubscription = ({ subscriptionId }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -10,91 +6,98 @@ const SplitSubscription = ({ subscriptionId }) => {
   const [splits, setSplits] = useState([]);
   const [splitRatio, setSplitRatio] = useState(0);
 
+  const mockUsers = [
+    { id: 1, name: "Alice", email: "alice@example.com" },
+    { id: 2, name: "Bob", email: "bob@example.com" },
+    { id: 3, name: "Charlie", email: "charlie@example.com" },
+  ];
+
   // Search for users
-  const handleSearch = async () => {
-    const response = await fetch(`http://localhost:5000/api/users/search?query=${searchQuery}`);
-    const data = await response.json();
-    setSearchResults(data);
+  const handleSearch = () => {
+    const filteredUsers = mockUsers.filter(
+      (user) =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchResults(filteredUsers);
   };
-  
-  const handleAddSplit = async (userId) => {
-    const response = await fetch(`http://localhost:5000/api/subscriptions/${subscriptionId}/splits`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, splitRatio }),
-    });
-    const data = await response.json();
-    if (data.id) {
-      fetchSplits(); // Refresh the splits list
+
+  // Add a split
+  const handleAddSplit = (userId) => {
+    const user = mockUsers.find((u) => u.id === userId);
+    if (user) {
+      setSplits([...splits, { ...user, splitRatio }]);
+      setSearchQuery("");
+      setSearchResults([]);
     }
   };
-  
-  const fetchSplits = async () => {
-    const response = await fetch(`http://localhost:5000/api/subscriptions/${subscriptionId}/splits`);
-    const data = await response.json();
-    setSplits(data);
-  };
-
-  // Load splits on mount
-  React.useEffect(() => {
-    fetchSplits();
-  }, [subscriptionId]);
 
   return (
-    <Card className="bg-gray-800 text-white">
-      <CardHeader>
-        <CardTitle>Split Subscription</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Search for users */}
-          <div className="flex space-x-2">
-            <Input
-              type="text"
-              placeholder="Search for users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-gray-700 text-white"
-            />
-            <Button onClick={handleSearch}>Search</Button>
-          </div>
-
-          {/* Search results */}
-          {searchResults.length > 0 && (
-            <div className="space-y-2">
-              {searchResults.map((user) => (
-                <div key={user.id} className="flex justify-between items-center">
-                  <span>
-                    {user.name} ({user.email})
-                  </span>
-                  <Button onClick={() => handleAddSplit(user.id)}>Add Split</Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Splits table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Split Ratio</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {splits.map((split) => (
-                <TableRow key={split.id}>
-                  <TableCell>{split.name}</TableCell>
-                  <TableCell>{split.email}</TableCell>
-                  <TableCell>{split.splitRatio}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4">Split Subscription</h2>
+      <div className="space-y-4">
+        {/* Search for users */}
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="Search for users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-gray-700 text-white p-2 rounded flex-1"
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Search
+          </button>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Search results */}
+        {searchResults.length > 0 && (
+          <div className="space-y-2">
+            {searchResults.map((user) => (
+              <div
+                key={user.id}
+                className="flex justify-between items-center bg-gray-800 p-2 rounded"
+              >
+                <span>
+                  {user.name} ({user.email})
+                </span>
+                <button
+                  onClick={() => handleAddSplit(user.id)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                >
+                  Add Split
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Splits table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-800">
+                <th className="p-2 text-left">User</th>
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-left">Split Ratio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {splits.map((split, index) => (
+                <tr key={index} className="border-b border-gray-700">
+                  <td className="p-2">{split.name}</td>
+                  <td className="p-2">{split.email}</td>
+                  <td className="p-2">{split.splitRatio}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

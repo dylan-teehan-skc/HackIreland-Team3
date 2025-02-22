@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "./components/ui/button"; // Assuming you're using shadcn-ui
 
 const LandingPage = () => {
   return (
@@ -9,8 +8,10 @@ const LandingPage = () => {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">SubClub</h1>
           <div className="flex space-x-4">
-            <Button variant="ghost">Login</Button>
-            <Button>Sign Up</Button>
+            <button className="text-gray-400 hover:text-white">Login</button>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Sign Up
+            </button>
           </div>
         </div>
       </nav>
@@ -24,7 +25,9 @@ const LandingPage = () => {
           SubClub helps you manage, track, and split recurring expenses with ease.
           Never miss a payment again!
         </p>
-        <Button className="bg-blue-600 hover:bg-blue-700">Get Started</Button>
+        <button className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+          Get Started
+        </button>
 
         {/* Hero Graphic */}
         <div className="mt-16">
