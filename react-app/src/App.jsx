@@ -19,10 +19,12 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/subscriptions" element={<SubscriptionManager />} />
-            <Route path="/split-subscription" element={<SplitSubscription />} />
-            <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+              <Route path="/subscriptions" element={<SubscriptionManager />} />
+              <Route path="/split-subscription" element={<SplitSubscription />} />
+            </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
           </Routes>
