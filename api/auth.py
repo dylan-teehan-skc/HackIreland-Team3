@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from .database import SessionLocal
 from .models import User
+import logging
 
 # Configuration
 SECRET_KEY = "your-secret-key-keep-it-secret"  # In production, move this to environment variables
@@ -15,6 +16,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 def get_db():
     db = SessionLocal()
@@ -30,13 +34,17 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def get_user(db: Session, username: str) -> Optional[User]:
+    logger.debug(f"Fetching user {username} from database")
     return db.query(User).filter(User.username == username).first()
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
+    logger.debug(f"Authenticating user {username}")
     user = get_user(db, username)
     if not user:
+        logger.warning(f"User {username} not found")
         return None
     if not verify_password(password, user.hashed_password):
+        logger.warning(f"Password verification failed for user {username}")
         return None
     return user
 
@@ -48,6 +56,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    logger.debug(f"Access token created for {data.get('sub')}")
     return encoded_jwt
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -60,18 +69,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            logger.error("Token payload does not contain 'sub'")
             raise credentials_exception
     except JWTError:
+        logger.error("JWT decoding failed")
         raise credentials_exception
     
     user = get_user(db, username)
     if user is None:
+        logger.error(f"User {username} not found after token decoding")
         raise credentials_exception
     return user
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-
     if not current_user.is_active:
+        logger.warning(f"Inactive user {current_user.username} attempted access")
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
