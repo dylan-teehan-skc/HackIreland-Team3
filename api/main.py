@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .database import engine, Base
 from .config import get_settings, setup_logging
-from .routes import file_router, card_router, subscription_router, auth_router
+from .routes import file_router, card_router, subscription_router, auth_router, webhook_routes
 
 # Initialize settings and logging
 settings = get_settings()
@@ -21,3 +21,4 @@ app.include_router(auth_router)
 app.include_router(file_router)
 app.include_router(card_router)
 app.include_router(subscription_router)
+app.include_router(webhook_routes.router)
