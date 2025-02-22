@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
-from typing import Dict
+from typing import Dict, Optional
+from pydantic import BaseModel
 
 from api.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -38,33 +39,48 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+class UserRegistration(BaseModel):
+    username: str
+    email: str
+    password: str
+    address_line1: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = 'US'
+    phone_number: Optional[str] = None
+
 @router.post("/register", response_model=Dict[str, str])
 async def register_user(
-    username: str,
-    email: str,
-    password: str,
+    user_data: UserRegistration,
     db: Session = Depends(get_db)
 ):
     # Check if name already exists
-    if db.query(User).filter(User.name == username).first():
+    if db.query(User).filter(User.name == user_data.username).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered"
         )
     
     # Check if email already exists
-    if db.query(User).filter(User.email == email).first():
+    if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
         
     # Create new user with hashed password
-    hashed_password = get_password_hash(password)
+    hashed_password = get_password_hash(user_data.password)
     new_user = User(
-        name=username,
-        email=email,
-        hashed_password=hashed_password
+        name=user_data.username,
+        email=user_data.email,
+        hashed_password=hashed_password,
+        address_line1=user_data.address_line1,
+        city=user_data.city,
+        state=user_data.state,
+        postal_code=user_data.postal_code,
+        country=user_data.country,
+        phone_number=user_data.phone_number
     )
     
     db.add(new_user)

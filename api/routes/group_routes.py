@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from ..models import User, Group, VirtualCard, CardMember
 from ..auth import get_current_active_user
 from ..database import get_db
+from ..services.cardCreation import create_cardholder, create_virtual_card
 
 import logging
 
@@ -47,9 +48,34 @@ async def create_group(
         db.add(new_group)
         db.flush()  # Get the group ID
         
-        # Create associated virtual card
+        # Create Stripe cardholder for the group
+        cardholder_result = create_cardholder(
+            name=f"Group {group_data.name}",
+            email=current_user.email,  # Use admin's email for now
+            phone_number=current_user.phone_number,
+            address_line1=current_user.address_line1,
+            city=current_user.city,
+            state=current_user.state,
+            postal_code=current_user.postal_code
+        )
+        
+        if not cardholder_result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Failed to create Stripe cardholder: {cardholder_result["error"]}'
+            )
+            
+        # Create Stripe virtual card
+        card_result = create_virtual_card(cardholder_result["cardholder"].id)
+        if not card_result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Failed to create Stripe virtual card: {card_result["error"]}'
+            )
+            
+        # Create associated virtual card in our database
         virtual_card = VirtualCard(
-            virtual_card_id=f"V-{new_group.id}",  # Simple virtual card ID format
+            virtual_card_id=card_result["card"].id,  # Use Stripe card ID
             group_id=new_group.id
         )
         db.add(virtual_card)

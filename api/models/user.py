@@ -4,8 +4,12 @@ from .base import Base
 from typing import Optional
 
 class User(Base):
-    address = Column(String, nullable=True)
-    location = Column(String, nullable=True)
+    # Address fields for Stripe
+    address_line1 = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
+    country = Column(String, nullable=True, default='US')
     phone_number = Column(String, nullable=True)
     card_holder_id = Column(String, nullable=True)
 
