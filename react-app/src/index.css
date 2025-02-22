@@ -1,0 +1,79 @@
+/* Global Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: white;
+  }
+  
+  /* Header Styles */
+  .header {
+    background-color: #1a1a1a;
+    padding: 15px 0;
+    text-align: center;
+  }
+  
+  .header a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 18px;
+  }
+  
+  .header a:hover {
+    color: #4da6ff;
+  }
+  
+  /* Footer Styles */
+  .footer {
+    background-color: #1a1a1a;
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
+  }
+  
+  /* Landing Page */
+  .landing-container {
+    text-align: center;
+    padding: 50px 20px;
+  }
+  
+  .landing-title {
+    font-size: 36px;
+    font-weight: bold;
+  }
+  
+  .landing-text {
+    font-size: 18px;
+    color: #b0b0b0;
+  }
+  
+  .button {
+    display: inline-block;
+    margin: 15px;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  
+  .primary-btn {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .primary-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .secondary-btn {
+    border: 2px solid #007bff;
+    color: #007bff;
+  }
+  
+  .secondary-btn:hover {
+    background-color: #007bff;
+    color: white;
+  }  
