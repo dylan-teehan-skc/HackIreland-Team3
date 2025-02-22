@@ -9,6 +9,7 @@ import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import ProtectedRoute from "./components/ProtectedRoute";
 import './App.css';
 
 function App() {
