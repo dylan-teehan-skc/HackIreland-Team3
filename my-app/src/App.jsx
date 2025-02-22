@@ -6,6 +6,9 @@ import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import SubscriptionManager from './pages/SubscriptionManager';
 import Footer from './components/Footer';
+import Dashboard from './pages/Dashboard';
+
+// Inside the Routes component
 
 function App() {
   return (
