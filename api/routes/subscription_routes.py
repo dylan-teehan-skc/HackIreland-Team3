@@ -4,6 +4,7 @@ from api.services.subscription_parser import process_subscriptions, get_subscrip
 import logging
 import os
 import json
+from datetime import datetime, timedelta
 
 router = APIRouter(
     prefix="/subscriptions",
@@ -72,4 +73,59 @@ async def filter_subscriptions(file_id: str, price: float = Query(None), descrip
         return filtered_subscriptions
     except Exception as e:
         logger.error(f"Error filtering subscriptions: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error filtering subscriptions") 
+        raise HTTPException(status_code=500, detail="Error filtering subscriptions")
+
+@router.get("/total_spent/{file_id}")
+async def total_spent(file_id: str):
+    logger.debug(f"Calculating total spent for file ID: {file_id}")
+    try:
+        file_path = file_storage.get(file_id)
+        logger.debug(f"File path: {file_path}")
+        if not file_path or not os.path.exists(file_path):
+            logger.error(f"File ID {file_id} not found")
+            raise HTTPException(status_code=404, detail="File ID not found")
+
+        subscriptions = process_subscriptions(file_path)
+        logger.debug(f"Subscriptions: {subscriptions}")
+        one_year_ago = datetime.now() - timedelta(days=365)
+        logger.debug(f"One year ago: {one_year_ago}")
+
+        total_spent = sum(
+            sub['Amount'] for sub in subscriptions
+            for date in sub['Dates']
+            if datetime.strptime(date, "%Y-%m-%d") >= one_year_ago
+        )
+
+        logger.info(f"Total spent in the last 12 months: {total_spent}")
+        return {"total_spent": total_spent}
+    except Exception as e:
+        logger.error(f"Error calculating total spent: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error calculating total spent")
+
+@router.get("/specific_spent/{file_id}")
+async def specific_spent(file_id: str, description: str, price: float):
+    logger.debug(f"Calculating specific spent for file ID: {file_id}, description: {description}, price: {price}")
+    try:
+        file_path = file_storage.get(file_id)
+        logger.debug(f"File path: {file_path}")
+        if not file_path or not os.path.exists(file_path):
+            logger.error(f"File ID {file_id} not found")
+            raise HTTPException(status_code=404, detail="File ID not found")
+
+        subscriptions = process_subscriptions(file_path)
+        logger.debug(f"Subscriptions: {subscriptions}")
+        one_year_ago = datetime.now() - timedelta(days=365)
+        logger.debug(f"One year ago: {one_year_ago}")
+
+        specific_spent = sum(
+            sub['Amount'] for sub in subscriptions
+            if sub['Description'].lower() == description.lower() and sub['Amount'] == price
+            for date in sub['Dates']
+            if datetime.strptime(date, "%Y-%m-%d") >= one_year_ago
+        )
+
+        logger.info(f"Specific spent in the last 12 months: {specific_spent}")
+        return {"specific_spent": specific_spent}
+    except Exception as e:
+        logger.error(f"Error calculating specific spent: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error calculating specific spent") 
