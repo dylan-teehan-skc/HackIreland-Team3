@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import api.database as database 
 from .models.base import Base
 from .config import get_settings, setup_logging
@@ -26,6 +27,15 @@ app = FastAPI(
     }
 )
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Adjust this to match your React app's URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include routers
 app.include_router(auth_router)
 app.include_router(file_router)
@@ -34,7 +44,6 @@ app.include_router(subscription_router)
 app.include_router(webhook_routes.router)
 app.include_router(group_routes.router)
 app.include_router(real_card_routes.router)
-
 
 # Example of logging usage in main.py
 logger = logging.getLogger(__name__)
