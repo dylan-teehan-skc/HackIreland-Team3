@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from .database import engine, Base
+import api.database as database 
+from .models.base import Base
 from .config import get_settings, setup_logging
 from .routes import file_router, card_router, subscription_router
 
@@ -8,7 +9,7 @@ settings = get_settings()
 setup_logging()
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=database.engine)
 
 # Initialize FastAPI app
 app = FastAPI(
