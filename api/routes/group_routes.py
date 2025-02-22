@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from ..models import User, Group, VirtualCard, CardMember
 from ..auth import get_current_active_user
@@ -24,6 +24,16 @@ router = APIRouter(
 
 class GroupCreate(BaseModel):
     name: str
+    
+    @validator('name')
+    def validate_name(cls, v):
+        # Remove leading/trailing whitespace
+        v = v.strip()
+        if not v:
+            raise ValueError('Name cannot be empty')
+        if len(v) > 50:  # Reasonable limit for a group name
+            raise ValueError('Name cannot be longer than 50 characters')
+        return v
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_group(
@@ -48,9 +58,16 @@ async def create_group(
         db.add(new_group)
         db.flush()  # Get the group ID
         
+        # Verify country is Ireland before creating cardholder
+        if current_user.country != 'IE':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Only users from Ireland (IE) can create groups at this time'
+            )
+
         # Create Stripe cardholder for the group
         cardholder_result = create_cardholder(
-            name=f"Group {group_data.name}",
+            name=current_user.name,  # Use admin's name for Stripe cardholder
             email=current_user.email,  # Use admin's email for now
             phone_number=current_user.phone_number,
             address_line1=current_user.address_line1,
