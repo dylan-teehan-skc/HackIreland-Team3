@@ -1,3 +1,8 @@
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from api.config import get_settings
@@ -10,6 +15,7 @@ engine = create_engine(
     settings.DATABASE_URL, connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+logger.info("Database engine created")
 
 # Dependency to get a database session
 def get_db():
