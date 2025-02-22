@@ -58,8 +58,11 @@ async def create_group(
         db.add(new_group)
         db.flush()  # Get the group ID
         
+        logging.debug(f"User {current_user.id} is creating group {new_group.id}")
+        logging.debug(f"User {current_user.id} is from {current_user.country}")
         # Verify country is Ireland before creating cardholder
         if current_user.country != 'IE':
+            logging.debug(f"User {current_user.id} is from {current_user.country}, so can't create groups")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Only users from Ireland (IE) can create groups at this time'
@@ -73,7 +76,8 @@ async def create_group(
             address_line1=current_user.address_line1,
             city=current_user.city,
             state=current_user.state,
-            postal_code=current_user.postal_code
+            postal_code=current_user.postal_code,
+            country=current_user.country  # Pass the user's country
         )
         
         if not cardholder_result["success"]:
