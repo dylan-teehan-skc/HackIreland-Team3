@@ -15,7 +15,15 @@ Base.metadata.create_all(bind=database.engine)
 # Initialize FastAPI app
 app = FastAPI(
     title="Subscription Analysis API",
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
+    # Add OpenAPI security scheme configuration
+    openapi_tags=[{
+        "name": "Authentication",
+        "description": "Operations with users. OAuth2 with Password and Bearer token."
+    }],
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+    }
 )
 
 # Include routers

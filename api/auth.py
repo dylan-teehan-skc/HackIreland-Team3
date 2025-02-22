@@ -23,7 +23,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiration time in minutes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 configuration with Bearer token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 # Set up logging for authentication operations
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def get_user(db: Session, username: str) -> Optional[User]:
         Optional[User]: User object if found, None otherwise
     """
     logger.debug(f"Fetching user {username} from database")
-    return db.query(User).filter(User.username == username).first()
+    return db.query(User).filter(User.name == username).first()
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
     """Authenticate a user by username and password.
@@ -138,17 +138,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        name: str = payload.get("sub")
+        if name is None:
             logger.error("Token payload does not contain 'sub'")
             raise credentials_exception
     except JWTError:
         logger.error("JWT decoding failed")
         raise credentials_exception
     
-    user = get_user(db, username)
+    user = get_user(db, name)
     if user is None:
-        logger.error(f"User {username} not found after token decoding")
+        logger.error(f"User {name} not found after token decoding")
         raise credentials_exception
     return user
 
@@ -164,8 +164,5 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     Raises:
         HTTPException: If user is inactive
     """
-    if not current_user.is_active:
-        logger.warning(f"Inactive user {current_user.username} attempted access")
-        raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
