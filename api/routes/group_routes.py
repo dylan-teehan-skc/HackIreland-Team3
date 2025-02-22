@@ -8,12 +8,19 @@ from ..models import User, Group, VirtualCard, CardMember
 from ..auth import get_current_active_user
 from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/groups",
+    tags=["Groups"],
+    responses={
+        401: {"description": "Unauthorized"},
+        404: {"description": "Not found"}
+    }
+)
 
 class GroupCreate(BaseModel):
     name: str
 
-@router.post('/groups', status_code=status.HTTP_201_CREATED)
+@router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_group(
     group_data: GroupCreate,
     current_user: User = Depends(get_current_active_user),
@@ -64,7 +71,7 @@ async def create_group(
             detail='Group creation failed'
         )
 
-@router.post('/groups/{group_id}/join', status_code=status.HTTP_200_OK)
+@router.post('/{group_id}/join', status_code=status.HTTP_200_OK)
 async def join_group(
     group_id: int,
     current_user: User = Depends(get_current_active_user),
@@ -121,7 +128,7 @@ class GroupMember(BaseModel):
     email: str
     is_admin: bool
 
-@router.get('/groups/{group_id}/members', response_model=List[GroupMember])
+@router.get('/{group_id}/members', response_model=List[GroupMember])
 async def get_group_members(
     group_id: int,
     current_user: User = Depends(get_current_active_user),
@@ -162,7 +169,7 @@ class UserGroup(BaseModel):
     is_admin: bool
     virtual_card_id: str
 
-@router.get('/user/groups', response_model=List[UserGroup])
+@router.get('/my', response_model=List[UserGroup])
 async def get_user_groups(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)

@@ -7,14 +7,21 @@ from ..models import User, RealCard
 from ..auth import get_current_active_user
 from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/real-cards",
+    tags=["Real Cards"],
+    responses={
+        401: {"description": "Unauthorized"},
+        404: {"description": "Not found"}
+    }
+)
 
 class RealCardCreate(BaseModel):
     card_number: str
     card_holder_name: str
     expiry_date: str
 
-@router.post('/real-cards', status_code=status.HTTP_201_CREATED)
+@router.post('/', status_code=status.HTTP_201_CREATED)
 async def add_real_card(
     card_data: RealCardCreate,
     current_user: User = Depends(get_current_active_user),
@@ -58,7 +65,7 @@ class RealCardResponse(BaseModel):
     card_number: str
     expiry_date: str
 
-@router.get('/real-cards', response_model=RealCardResponse)
+@router.get('/', response_model=RealCardResponse)
 async def get_real_card(
     current_user: User = Depends(get_current_active_user)
 ):
@@ -75,7 +82,7 @@ async def get_real_card(
         expiry_date=current_user.real_card.expiry_date
     )
 
-@router.delete('/real-cards', status_code=status.HTTP_200_OK)
+@router.delete('/', status_code=status.HTTP_200_OK)
 async def remove_real_card(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
