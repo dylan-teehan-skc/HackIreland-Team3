@@ -43,26 +43,3 @@ def find_subscriptions(df):
                 })
     logger.info(f"Found {len(subscriptions)} subscriptions")
     return json.dumps(subscriptions, indent=4)
-
-def main():
-    # Path to your Excel file
-    file_path = "Spending_data.xlsx"
-    
-    try:
-        # Load the data
-        df = load_data(file_path)
-        
-        # Preprocess the data
-        processed_df = preprocess_data(df)
-        
-        # Find subscriptions and get JSON output
-        subscriptions_json = find_subscriptions(processed_df)
-        
-        # Print the results
-        print(subscriptions_json)
-        
-    except Exception as e:
-        print(f"Error processing file: {str(e)}")
-
-if __name__ == "__main__":
-    main()
