@@ -1,8 +1,14 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
+from typing import Optional
 
 class User(Base):
+    address = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    card_holder_id = Column(String, nullable=True)
+
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
