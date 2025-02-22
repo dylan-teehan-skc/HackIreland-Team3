@@ -1,13 +1,14 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, LargeBinary
 from sqlalchemy.orm import relationship
-from api.database import Base
+from .base import Base
 
 class UploadedFile(Base):
     __tablename__ = "uploaded_files"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    file_name = Column(String, nullable=False)
+    file_content = Column(LargeBinary, nullable=False)
     file_path = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    # Relationship to User
-    owner = relationship("User", back_populates="uploaded_files") 
+    # Remove the relationship to User
+    # owner = relationship("User", back_populates="uploaded_files") 
