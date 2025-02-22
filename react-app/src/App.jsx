@@ -7,6 +7,8 @@ import Dashboard from "./pages/Dashboard";
 import SubscriptionManager from "./pages/SubscriptionManager";
 import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import './App.css';
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
             <Route path="/subscriptions" element={<SubscriptionManager />} />
             <Route path="/split-subscription" element={<SplitSubscription />} />
             <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
           </Routes>
         </main>
         <Footer />

@@ -4,23 +4,18 @@ import { Link } from "react-router-dom";
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
-      {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-gray-900 to-gray-900 opacity-75 -z-10"></div>
 
-      {/* Main Content */}
       <div className="text-center max-w-2xl relative z-10">
-        {/* Title */}
         <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent animate-gradient">
           Take Control of Your Subscriptions
         </h1>
 
-        {/* Subtitle */}
         <p className="text-lg md:text-xl text-gray-300 mb-8">
           SubClub helps you manage, track, and split recurring expenses with ease.
           Never miss a payment again!
         </p>
 
-        {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/dashboard"
@@ -39,7 +34,6 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* Animated Blobs */}
       <div className="absolute w-64 h-64 bg-purple-600 rounded-full opacity-20 blur-3xl animate-blob animation-delay-2000 -top-32 -left-32"></div>
       <div className="absolute w-64 h-64 bg-pink-600 rounded-full opacity-20 blur-3xl animate-blob animation-delay-4000 -bottom-32 -right-32"></div>
     </div>
