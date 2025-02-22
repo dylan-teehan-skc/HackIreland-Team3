@@ -13,7 +13,7 @@ const SignUp = () => {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -21,16 +21,15 @@ const SignUp = () => {
         body: JSON.stringify({ username, email, password }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("access_token", data.access_token); // Store token
-        navigate("/dashboard"); // Redirect to dashboard
-      } else {
-        setError(data.detail || "Sign up failed. Please try again.");
+      if (!response.ok) {
+        throw new Error("Sign up failed. Please try again.");
       }
+
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token); // Store token
+      navigate("/dashboard"); // Redirect to dashboard
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(err.message || "An error occurred. Please try again.");
     }
   };
 

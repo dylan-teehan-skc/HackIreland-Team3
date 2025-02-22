@@ -12,7 +12,7 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/token", {
+      const response = await fetch("http://localhost:8000/api/auth/token", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -23,16 +23,15 @@ const Login = () => {
         }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("access_token", data.access_token); // Store token
-        navigate("/dashboard"); // Redirect to dashboard
-      } else {
-        setError(data.detail || "Login failed. Please try again.");
+      if (!response.ok) {
+        throw new Error("Login failed. Please try again.");
       }
+
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token); // Store token
+      navigate("/dashboard"); // Redirect to dashboard
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(err.message || "An error occurred. Please try again.");
     }
   };
 
