@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "../index.css";
 
 const SignUp = () => {
   const [username, setUsername] = useState("");
@@ -25,8 +24,8 @@ const SignUp = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("access_token", data.access_token);
-        navigate("/dashboard");
+        localStorage.setItem("access_token", data.access_token); // Store token
+        navigate("/dashboard"); // Redirect to dashboard
       } else {
         setError(data.detail || "Sign up failed. Please try again.");
       }

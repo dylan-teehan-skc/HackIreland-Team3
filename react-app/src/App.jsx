@@ -9,6 +9,7 @@ import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import ProtectedRoute from "./components/ProtectedRoute";
 import './App.css';
 
 function App() {
@@ -19,10 +20,12 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/subscriptions" element={<SubscriptionManager />} />
-            <Route path="/split-subscription" element={<SplitSubscription />} />
-            <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+              <Route path="/subscriptions" element={<SubscriptionManager />} />
+              <Route path="/split" element={<SplitSubscription />} />
+            </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
           </Routes>

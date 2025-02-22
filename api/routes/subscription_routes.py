@@ -13,7 +13,7 @@ router = APIRouter(
 )
 logger = logging.getLogger(__name__)
 
-@router.get("/subscriptions/{file_id}")
+@router.get("/subscriptions/{file_id}", responses={200: {"description": "List of subscriptions", "content": {"application/json": {"example": [{"Description": "POS NETFLIX", "Amount": 15.99, "Dates": ["2025-01-03"], "Estimated_Next": "2025-02-03"}]}}}})
 async def get_subscriptions(file_id: str):
     logger.debug(f"Fetching subscriptions for file ID: {file_id}")
     try:
@@ -31,7 +31,7 @@ async def get_subscriptions(file_id: str):
         logger.error(f"Error processing subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail="Error processing subscriptions")
 
-@router.get("/subscriptions/sorted/{file_id}")
+@router.get("/subscriptions/sorted/{file_id}", responses={200: {"description": "Sorted list of subscription transactions", "content": {"application/json": {"example": [{"Description": "POS NETFLIX", "Amount": 15.99, "Date": "2025-01-03", "Estimated_Next": "2025-02-03"}]}}}})
 async def get_sorted_subscriptions(file_id: str):
     logger.debug(f"Fetching sorted subscriptions for file ID: {file_id}")
     try:
@@ -49,7 +49,7 @@ async def get_sorted_subscriptions(file_id: str):
         logger.error(f"Error processing sorted subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail="Error processing sorted subscriptions")
 
-@router.get("/filter/{file_id}")
+@router.get("/filter/{file_id}", responses={200: {"description": "Filtered list of subscriptions", "content": {"application/json": {"example": [{"Description": "POS NETFLIX", "Amount": 15.99, "Dates": ["2025-01-03"], "Estimated_Next": "2025-02-03"}]}}}})
 async def filter_subscriptions(file_id: str, price: float = Query(None), description: str = Query(None)):
     logger.debug(f"Filtering subscriptions for file ID: {file_id} with price: {price}, description: {description}")
     try:
@@ -75,7 +75,7 @@ async def filter_subscriptions(file_id: str, price: float = Query(None), descrip
         logger.error(f"Error filtering subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail="Error filtering subscriptions")
 
-@router.get("/total_spent/{file_id}")
+@router.get("/total_spent/{file_id}", responses={200: {"description": "Total amount spent on subscriptions in the last 12 months", "content": {"application/json": {"example": {"total_spent": 150.75}}}}})
 async def total_spent(file_id: str):
     logger.debug(f"Calculating total spent for file ID: {file_id}")
     try:
@@ -102,7 +102,7 @@ async def total_spent(file_id: str):
         logger.error(f"Error calculating total spent: {str(e)}")
         raise HTTPException(status_code=500, detail="Error calculating total spent")
 
-@router.get("/specific_spent/{file_id}")
+@router.get("/specific_spent/{file_id}", responses={200: {"description": "Amount spent on a specific subscription in the last 12 months", "content": {"application/json": {"example": {"specific_spent": 59.97}}}}})
 async def specific_spent(file_id: str, description: str, price: float):
     logger.debug(f"Calculating specific spent for file ID: {file_id}, description: {description}, price: {price}")
     try:
