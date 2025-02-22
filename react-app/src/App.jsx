@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import SubscriptionManager from "./pages/SubscriptionManager";
 import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
+import './App.css';
 
 function App() {
   return (
