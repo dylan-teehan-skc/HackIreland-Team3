@@ -1,144 +1,189 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from ..models import User, Group, VirtualCard, CardMember, RealCard
-from ..auth import require_auth
-from .. import db
+from sqlalchemy.orm import Session
+from typing import List
+from pydantic import BaseModel
 
-group_routes = Blueprint('group_routes', __name__)
+from ..models import User, Group, VirtualCard, CardMember
+from ..auth import get_current_active_user
+from ..database import get_db
 
-@group_routes.route('/groups', methods=['POST'])
-@require_auth
-def create_group():
-    """Create a new group and associated virtual card"""
-    data = request.get_json()
-    current_user = request.user  # Set by require_auth decorator
+router = APIRouter()
+
+class GroupCreate(BaseModel):
+    name: str
+
+@router.post('/groups', status_code=status.HTTP_201_CREATED)
+async def create_group(
+    group_data: GroupCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     
     # Check if user has a real card
     if not current_user.real_card:
-        return jsonify({'error': 'You must add a real card before creating a group'}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You must add a real card before creating a group'
+        )
     
     try:
         # Create the group
         new_group = Group(
-            name=data['name'],
+            name=group_data.name,
             admin_id=current_user.id
         )
-        db.session.add(new_group)
-        db.session.flush()  # Get the group ID
+        db.add(new_group)
+        db.flush()  # Get the group ID
         
         # Create associated virtual card
         virtual_card = VirtualCard(
             virtual_card_id=f"V-{new_group.id}",  # Simple virtual card ID format
             group_id=new_group.id
         )
-        db.session.add(virtual_card)
+        db.add(virtual_card)
         
         # Add admin as first member
         member = CardMember(
             card_id=virtual_card.id,
             user_id=current_user.id
         )
-        db.session.add(member)
+        db.add(member)
         
-        db.session.commit()
-        return jsonify({
+        db.commit()
+        return {
             'message': 'Group created successfully',
             'group_id': new_group.id,
             'virtual_card_id': virtual_card.virtual_card_id
-        }), 201
+        }
         
     except IntegrityError:
-        db.session.rollback()
-        return jsonify({'error': 'Group creation failed'}), 400
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Group creation failed'
+        )
 
-@group_routes.route('/groups/<int:group_id>/join', methods=['POST'])
-@require_auth
-def join_group():
-    """Join an existing group"""
-    current_user = request.user
-    group_id = request.view_args['group_id']
+@router.post('/groups/{group_id}/join', status_code=status.HTTP_200_OK)
+async def join_group(
+    group_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     
     # Check if user has a real card
     if not current_user.real_card:
-        return jsonify({'error': 'You must add a real card before joining a group'}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You must add a real card before joining a group'
+        )
     
     try:
         # Check if group exists
-        group = Group.query.get(group_id)
+        group = db.query(Group).get(group_id)
         if not group:
-            return jsonify({'error': 'Group not found'}), 404
-            
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Group not found'
+            )
         # Check if user is already a member
-        existing_membership = CardMember.query.join(VirtualCard).filter(
+        existing_membership = db.query(CardMember).join(VirtualCard).filter(
             VirtualCard.group_id == group_id,
             CardMember.user_id == current_user.id
         ).first()
         
         if existing_membership:
-            return jsonify({'error': 'Already a member of this group'}), 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Already a member of this group'
+            )
             
         # Add user as member
-        virtual_card = VirtualCard.query.filter_by(group_id=group_id).first()
+        virtual_card = db.query(VirtualCard).filter_by(group_id=group_id).first()
         member = CardMember(
             card_id=virtual_card.id,
             user_id=current_user.id
         )
-        db.session.add(member)
-        db.session.commit()
+        db.add(member)
+        db.commit()
         
-        return jsonify({'message': 'Successfully joined group'}), 200
-        
+        return {'message': 'Successfully joined group'}
     except IntegrityError:
-        db.session.rollback()
-        return jsonify({'error': 'Failed to join group'}), 400
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Failed to join group'
+        )
 
-@group_routes.route('/groups/<int:group_id>/members', methods=['GET'])
-@require_auth
-def get_group_members(group_id):
+class GroupMember(BaseModel):
+    id: int
+    name: str
+    email: str
+    is_admin: bool
+
+@router.get('/groups/{group_id}/members', response_model=List[GroupMember])
+async def get_group_members(
+    group_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Get all members of a group"""
     try:
-        # Check if group exists and user is a member
-        group = Group.query.get(group_id)
+        # Check if group exists
+        group = db.query(Group).get(group_id)
         if not group:
-            return jsonify({'error': 'Group not found'}), 404
-            
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Group not found'
+            )
         # Get all members
-        members = User.query.join(CardMember).join(VirtualCard).filter(
+        members = db.query(User).join(CardMember).join(VirtualCard).filter(
             VirtualCard.group_id == group_id
         ).all()
         
-        return jsonify({
-            'members': [{
-                'id': member.id,
-                'name': member.name,
-                'email': member.email,
-                'is_admin': member.id == group.admin_id
-            } for member in members]
-        }), 200
+        return [
+            GroupMember(
+                id=member.id,
+                name=member.name,
+                email=member.email,
+                is_admin=member.id == group.admin_id
+            ) for member in members
+        ]
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
-@group_routes.route('/user/groups', methods=['GET'])
-@require_auth
-def get_user_groups():
-    """Get all groups a user is a member of"""
-    current_user = request.user
-    
+class UserGroup(BaseModel):
+    id: int
+    name: str
+    is_admin: bool
+    virtual_card_id: str
+
+@router.get('/user/groups', response_model=List[UserGroup])
+async def get_user_groups(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     try:
         # Get all groups user is a member of
-        groups = Group.query.join(VirtualCard).join(CardMember).filter(
+        groups = db.query(Group).join(VirtualCard).join(CardMember).filter(
             CardMember.user_id == current_user.id
         ).all()
         
-        return jsonify({
-            'groups': [{
-                'id': group.id,
-                'name': group.name,
-                'is_admin': group.admin_id == current_user.id,
-                'virtual_card_id': group.virtual_card.virtual_card_id
-            } for group in groups]
-        }), 200
+        return [
+            UserGroup(
+                id=group.id,
+                name=group.name,
+                is_admin=group.admin_id == current_user.id,
+                virtual_card_id=group.virtual_card.virtual_card_id
+            ) for group in groups
+        ]
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

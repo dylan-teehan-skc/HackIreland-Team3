@@ -1,83 +1,109 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
 from ..models import User, RealCard
-from ..auth import require_auth
-from .. import db
+from ..auth import get_current_active_user
+from ..database import get_db
 
-real_card_routes = Blueprint('real_card_routes', __name__)
+router = APIRouter()
 
-@real_card_routes.route('/real-cards', methods=['POST'])
-@require_auth
-def add_real_card():
-    """Add a real card to user's account"""
-    data = request.get_json()
-    current_user = request.user
+class RealCardCreate(BaseModel):
+    card_number: str
+    card_holder_name: str
+    expiry_date: str
+
+@router.post('/real-cards', status_code=status.HTTP_201_CREATED)
+async def add_real_card(
+    card_data: RealCardCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     
     # Check if user already has a real card
     if current_user.real_card:
-        return jsonify({'error': 'User already has a real card registered'}), 400
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='User already has a real card registered'
+        )
     
     try:
         # Create new real card
         real_card = RealCard(
-            card_number=data['card_number'],
-            card_holder_name=data['card_holder_name'],
-            expiry_date=data['expiry_date']
+            card_number=card_data.card_number,
+            card_holder_name=card_data.card_holder_name,
+            expiry_date=card_data.expiry_date
         )
-        db.session.add(real_card)
-        db.session.flush()  # Get the real card ID
+        db.add(real_card)
+        db.flush()  # Get the real card ID
         
         # Associate with user
         current_user.real_card_id = real_card.id
-        db.session.commit()
+        db.commit()
         
-        return jsonify({
+        return {
             'message': 'Real card added successfully',
             'card_holder_name': real_card.card_holder_name
-        }), 201
-        
+        }
     except IntegrityError:
-        db.session.rollback()
-        return jsonify({'error': 'Failed to add real card'}), 400
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Failed to add real card'
+        )
 
-@real_card_routes.route('/real-cards', methods=['GET'])
-@require_auth
-def get_real_card():
+class RealCardResponse(BaseModel):
+    card_holder_name: str
+    card_number: str
+    expiry_date: str
+
+@router.get('/real-cards', response_model=RealCardResponse)
+async def get_real_card(
+    current_user: User = Depends(get_current_active_user)
+):
     """Get user's real card information"""
-    current_user = request.user
-    
     if not current_user.real_card:
-        return jsonify({'error': 'No real card found'}), 404
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='No real card found'
+        )
         
-    return jsonify({
-        'card_holder_name': current_user.real_card.card_holder_name,
-        'card_number': '****' + current_user.real_card.card_number[-4:],  # Only show last 4 digits
-        'expiry_date': current_user.real_card.expiry_date
-    }), 200
+    return RealCardResponse(
+        card_holder_name=current_user.real_card.card_holder_name,
+        card_number='****' + current_user.real_card.card_number[-4:],  # Only show last 4 digits
+        expiry_date=current_user.real_card.expiry_date
+    )
 
-@real_card_routes.route('/real-cards', methods=['DELETE'])
-@require_auth
-def remove_real_card():
+@router.delete('/real-cards', status_code=status.HTTP_200_OK)
+async def remove_real_card(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Remove user's real card"""
-    current_user = request.user
-    
     if not current_user.real_card:
-        return jsonify({'error': 'No real card found'}), 404
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='No real card found'
+        )
     
     try:
         # Check if user is part of any groups
         if current_user.card_memberships:
-            return jsonify({
-                'error': 'Cannot remove card while member of groups. Leave all groups first.'
-            }), 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Cannot remove card while member of groups. Leave all groups first.'
+            )
         
         # Remove the real card
-        db.session.delete(current_user.real_card)
+        db.delete(current_user.real_card)
         current_user.real_card_id = None
-        db.session.commit()
+        db.commit()
         
-        return jsonify({'message': 'Real card removed successfully'}), 200
-        
+        return {'message': 'Real card removed successfully'}
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
