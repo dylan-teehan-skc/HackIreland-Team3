@@ -43,3 +43,9 @@ def find_subscriptions(df):
                 })
     logger.info(f"Found {len(subscriptions)} subscriptions")
     return json.dumps(subscriptions, indent=4)
+
+def process_subscriptions(file_path):
+    """Process the subscriptions from the given file path."""
+    df = load_data(file_path)
+    df = preprocess_data(df)
+    return find_subscriptions(df) 
