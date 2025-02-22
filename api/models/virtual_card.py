@@ -6,7 +6,7 @@ class VirtualCard(Base):
     __tablename__ = 'virtual_cards'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    card_number = Column(String, unique=True, nullable=False)
+    virtual_card_id = Column(String, unique=True, nullable=False)
     group_id = Column(Integer, ForeignKey('groups.id'), nullable=False, unique=True)
 
     group = relationship("Group", back_populates="virtual_card")
