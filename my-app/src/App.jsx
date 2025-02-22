@@ -6,6 +6,8 @@ import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import SubscriptionManager from './pages/SubscriptionManager';
 import Footer from './components/Footer';
+import SubscriptionDetails from "./pages/SubscriptionDetails";
+import SplitSubscription from "./pages/SplitSubscription";
 
 function App() {
   return (
@@ -15,6 +17,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/subscriptions" element={<SubscriptionManager />} />
+        <Route path="/subscription/:id" element={<SubscriptionDetails />} />
       </Routes>
       <Footer />
     </Router>
