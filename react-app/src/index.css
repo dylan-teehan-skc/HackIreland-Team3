@@ -1,194 +1,43 @@
-/* Global Styles */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: #121212;
-    color: white;
+@keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
   
-  /* Header Styles */
-  .header {
-    background-color: #1a1a1a;
-    padding: 15px 0;
-    text-align: center;
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 5s ease infinite;
   }
   
-  .header a {
-    color: white;
-    text-decoration: none;
-    margin: 0 15px;
-    font-size: 18px;
+  @keyframes blob {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
   }
   
-  .header a:hover {
-    color: #4da6ff;
+  .animate-blob {
+    animation: blob 7s ease-in-out infinite;
   }
   
-  /* Footer Styles */
-  .footer {
-    background-color: #1a1a1a;
-    padding: 15px;
-    text-align: center;
-    font-size: 14px;
+  .animation-delay-2000 {
+    animation-delay: 2s;
   }
   
-  /* Landing Page */
-  .landing-container {
-    text-align: center;
-    padding: 50px 20px;
-  }
-  
-  .landing-title {
-    font-size: 36px;
-    font-weight: bold;
-  }
-  
-  .landing-text {
-    font-size: 18px;
-    color: #b0b0b0;
-  }
-  
-  .button {
-    display: inline-block;
-    margin: 15px;
-    padding: 10px 20px;
-    font-size: 18px;
-    border-radius: 5px;
-    cursor: pointer;
-    text-decoration: none;
-  }
-  
-  .primary-btn {
-    background-color: #007bff;
-    color: white;
-  }
-  
-  .primary-btn:hover {
-    background-color: #0056b3;
-  }
-  
-  .secondary-btn {
-    border: 2px solid #007bff;
-    color: #007bff;
-  }
-  
-  .secondary-btn:hover {
-    background-color: #007bff;
-    color: white;
-  }  
-
-  .subscription-container {
-    max-width: 800px;
-    margin: auto;
-    padding: 20px;
-    background: #1a1a1a;
-    color: white;
-    text-align: center;
-  }
-  
-  .subscription-header {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 20px;
-  }
-  
-  .grid-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-  }
-  
-  .grid-item {
-    background: #333;
-    padding: 20px;
-    border-radius: 8px;
-  }
-  
-/* Fullscreen Page */
-.subscription-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    width: 100%;
-    background-color: #121212;
-    color: white;
-    padding: 20px;
-  }
-  
-  /* Header */
-  .subscription-header {
-    font-size: 32px;
-    font-weight: bold;
-    margin-bottom: 20px;
-  }
-  
-  /* Grid Layout */
-  .subscription-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    width: 90%;
-    max-width: 1200px;
-  }
-  
-  /* Card Styling */
-  .subscription-card {
-    background: #1e1e1e;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .subscription-card.large {
-    grid-column: span 2;
-  }
-  
-  /* Description Text */
-  .description {
-    color: #b0b0b0;
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-  
-  /* Payments Table */
-  .payments-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-  
-  .payments-table th, .payments-table td {
-    border: 1px solid #4da6ff;
-    padding: 10px;
-    text-align: left;
-  }
-  
-  .payments-table th {
-    background-color: #333;
-  }
-  
-  /* Graph */
-  canvas {
-    max-width: 100%;
-    height: auto;
-  }
-  
-  /* Deactivate Button */
-  .deactivate-button {
-    margin-top: 30px;
-    padding: 12px 24px;
-    background: red;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px;
-  }
-  
-  .deactivate-button:hover {
-    background: darkred;
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
