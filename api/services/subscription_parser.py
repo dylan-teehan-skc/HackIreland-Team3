@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 def load_data(file_path):
     logger.info(f"Loading data from {file_path}")
     df = pd.read_excel(file_path, sheet_name="ViewTxns_XLS", skiprows=12)
-    df.columns = ["Date","Description", "Money In", "Money Out", "Balance"]
+    df.columns = ["Date", "Description", "Money In", "Money Out", "Balance"]
     return df
 
 def preprocess_data(df):
     logger.info("Preprocessing data")
     df["Money Out"] = pd.to_numeric(df["Money Out"], errors='coerce')
-    df["Money Out"] = df["Money Out"].fillna(0) 
+    df["Money Out"] = df["Money Out"].fillna(0)
     df["Description"] = df["Description"].apply(lambda x: re.sub(r'\s\d{2}/\d{2}.*$', '', str(x)))
     df = df[df["Money Out"] > 0]
     df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
@@ -42,10 +42,28 @@ def find_subscriptions(df):
                     "Estimated_Next": estimated_next_date
                 })
     logger.info(f"Found {len(subscriptions)} subscriptions")
-    return json.dumps(subscriptions, indent=4)
+    return subscriptions
 
 def process_subscriptions(file_path):
     """Process the subscriptions from the given file path."""
     df = load_data(file_path)
     df = preprocess_data(df)
-    return find_subscriptions(df) 
+    return find_subscriptions(df)
+
+def get_subscriptions_sorted_by_date(file_path):
+    """Get individual subscription transactions sorted by date."""
+    subscriptions = process_subscriptions(file_path)
+    individual_transactions = []
+
+    for subscription in subscriptions:
+        for date in subscription["Dates"]:
+            individual_transactions.append({
+                "Description": subscription["Description"],
+                "Amount": subscription["Amount"],
+                "Date": date,
+                "Estimated_Next": subscription["Estimated_Next"]
+            })
+
+    # Sort individual transactions by date
+    sorted_transactions = sorted(individual_transactions, key=lambda x: x["Date"])
+    return sorted_transactions 
