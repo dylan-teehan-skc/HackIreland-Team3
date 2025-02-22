@@ -1,16 +1,15 @@
-import os
 import stripe
 import logging
-from dotenv import load_dotenv
+from .config import get_settings
 
 # Configure logger
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Get settings
+settings = get_settings()
 
 # Configure Stripe with your secret key
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def create_cardholder(
     name: str,
@@ -111,29 +110,33 @@ def create_test_card() -> dict:
     """Create a test virtual card with example values."""
     logger.info("Creating test card")
     # First test if a test cardholder already exists
-    if os.environ.get('TEST_CARDHOLDER_ID') is None:
+    if not settings.TEST_CARDHOLDER_ID:
         logger.info("No test cardholder found, creating new one")
         cardholder_result = create_cardholder(
-            name=os.environ.get('TEST_CARDHOLDER_NAME'),
-            email=os.environ.get('TEST_CARDHOLDER_EMAIL'),
-            phone_number=os.environ.get('TEST_CARDHOLDER_PHONE'),
-            address_line1=os.environ.get('TEST_CARDHOLDER_ADDRESS'),
-            city=os.environ.get('TEST_CARDHOLDER_CITY'),
-            state=os.environ.get('TEST_CARDHOLDER_STATE'),
-            postal_code=os.environ.get('TEST_CARDHOLDER_POSTAL_CODE'),
-            country=os.environ.get('TEST_CARDHOLDER_COUNTRY')
+            name=settings.TEST_CARDHOLDER_NAME,
+            email=settings.TEST_CARDHOLDER_EMAIL,
+            phone_number=settings.TEST_CARDHOLDER_PHONE,
+            address_line1=settings.TEST_CARDHOLDER_ADDRESS,
+            city=settings.TEST_CARDHOLDER_CITY,
+            state=settings.TEST_CARDHOLDER_STATE,
+            postal_code=settings.TEST_CARDHOLDER_POSTAL,
+            country=settings.TEST_CARDHOLDER_COUNTRY
         )
 
         if not cardholder_result["success"]:
             logger.error("Failed to create test cardholder")
             return cardholder_result
         
-        os.environ['TEST_CARDHOLDER_ID'] = cardholder_result["cardholder"]["id"]
-        logger.info(f"Created test cardholder with ID: {os.environ['TEST_CARDHOLDER_ID']}")
+        # Note: We can't modify settings at runtime, so this ID needs to be saved elsewhere
+        # or retrieved from the API if needed
+        logger.info(f"Created test cardholder with ID: {cardholder_result['cardholder']['id']}")
+        cardholder_id = cardholder_result["cardholder"]["id"]
+    else:
+        cardholder_id = settings.TEST_CARDHOLDER_ID
     
     # Then create a virtual card for this cardholder
     logger.info("Creating virtual card for test cardholder")
-    card_result = create_virtual_card(os.environ.get('TEST_CARDHOLDER_ID'))
+    card_result = create_virtual_card(cardholder_id)
     
     if not card_result["success"]:
         logger.error("Failed to create virtual card for test cardholder")
@@ -142,7 +145,7 @@ def create_test_card() -> dict:
     logger.info("Successfully created test card")
     return {
         "success": True,
-        "cardholder": cardholder_result["cardholder"],
+        "cardholder": {"id": cardholder_id},  # We might not have the full cardholder object
         "card": card_result["card"]
     }
 
