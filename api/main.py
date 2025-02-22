@@ -5,12 +5,23 @@ from .config import get_settings, setup_logging
 from .routes import file_router, card_router, subscription_router, auth_router, webhook_routes, group_routes, real_card_routes
 import logging
 
+# Import all models to ensure they are registered with SQLAlchemy
+from .models import User, Group, VirtualCard, CardMember, RealCard, UploadedFile
+
 # Initialize settings and logging
 settings = get_settings()
 setup_logging()  # This sets up logging as per the configuration in logging_config.py
 
+# Debug database URL
+print(f"Database URL: {settings.DATABASE_URL}")
+
+# Ensure all models are registered with Base
+print("Registered models:", Base.metadata.tables.keys())
+
 # Create database tables
+print("Creating database tables...")
 Base.metadata.create_all(bind=database.engine)
+print("Database tables created successfully")
 
 # Initialize FastAPI app
 app = FastAPI(
