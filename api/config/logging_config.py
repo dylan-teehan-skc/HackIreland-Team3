@@ -2,7 +2,7 @@ import logging
 import logging.handlers
 import os
 from logging.config import dictConfig
-from .settings import get_settings
+from api.config import get_settings
 
 def setup_logging():
     """Configure logging for the FastAPI application."""
