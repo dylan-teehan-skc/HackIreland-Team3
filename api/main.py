@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .database import engine, Base
 from .config import get_settings, setup_logging
-from .routes import auth_router, file_router, card_router, health_router
+from .routes import file_router, card_router, subscription_router
 
 # Initialize settings and logging
 settings = get_settings()
@@ -17,7 +17,6 @@ app = FastAPI(
 )
 
 # Include routers
-app.include_router(auth_router)
 app.include_router(file_router)
 app.include_router(card_router)
-app.include_router(health_router)
+app.include_router(subscription_router)

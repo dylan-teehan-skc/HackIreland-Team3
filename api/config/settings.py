@@ -4,19 +4,21 @@ import os
 from typing import Optional
 
 class Settings(BaseSettings):
-    # Base Configuration
+    # Environment and Debugging
     ENV: str = os.environ.get("ENV", "development")
     DEBUG: bool = ENV == "development"
     TESTING: bool = ENV == "testing"
+    
+    # Database Configuration
+    DATABASE_URL: str = "sqlite:///./sql_app.db"
+    
+    # Security
     SECRET_KEY: str = os.environ.get("SECRET_KEY", "dev-key-please-change")
     
     # Logging Configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_FILE: str = "app.log"
-    
-    # Database Configuration
-    DATABASE_URL: str = "sqlite:///./sql_app.db"
     
     # Stripe Configuration
     STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
