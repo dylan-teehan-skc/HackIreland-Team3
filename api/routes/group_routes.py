@@ -8,6 +8,10 @@ from ..models import User, Group, VirtualCard, CardMember
 from ..auth import get_current_active_user
 from ..database import get_db
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/groups",
     tags=["Groups"],
@@ -49,6 +53,7 @@ async def create_group(
             group_id=new_group.id
         )
         db.add(virtual_card)
+        db.flush()  # Flush to assign virtual_card.id
         
         # Add admin as first member
         member = CardMember(
@@ -64,12 +69,14 @@ async def create_group(
             'virtual_card_id': virtual_card.virtual_card_id
         }
         
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        logger.error("IntegrityError: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Group creation failed'
         )
+
 
 @router.post('/{group_id}/join', status_code=status.HTTP_200_OK)
 async def join_group(
@@ -193,4 +200,52 @@ async def get_user_groups(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+
+@router.delete('/{group_id}', status_code=status.HTTP_200_OK)
+async def delete_group(
+    group_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a group. Only the group admin can delete their group."""
+    
+    # Get the group
+    group = db.query(Group).get(group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Group not found'
+        )
+    
+    # Check if current user is the admin
+    if group.admin_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only the group admin can delete the group'
+        )
+    
+    try:
+        # Delete all card memberships associated with the group's virtual card
+        db.query(CardMember).filter(
+            CardMember.card_id == group.virtual_card.id
+        ).delete()
+        
+        # Delete the virtual card
+        db.query(VirtualCard).filter(
+            VirtualCard.group_id == group.id
+        ).delete()
+        
+        # Delete the group
+        db.delete(group)
+        db.commit()
+        
+        return {'message': 'Group deleted successfully'}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting group: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to delete group'
         )

@@ -69,3 +69,23 @@ def create_test_card():
         "cardholder": {"id": cardholder_id},
         "card": card_result["card"]
     } 
+
+def create_virtual_card_for_user(user):
+    logger.info(f"Creating virtual card for user: {user.email}")
+    if not user.card_holder_id:
+        logger.info("User does not have a cardholder ID. Creating a new cardholder.")
+        ch_response = create_cardholder(
+            name=user.name,
+            email=user.email,
+            phone_number=user.phone_number,
+            address_line1=user.address if user.address else "",
+            city=user.location if user.location else "",
+            state="",
+            postal_code="",
+            country="US"
+        )
+        if not ch_response.get("success"):
+            return {"success": False, "error": "Failed to create cardholder."}
+        user.card_holder_id = ch_response["cardholder"].id
+        # TODO: persist the updated user in the database if necessary.
+    return create_virtual_card(user.card_holder_id)
