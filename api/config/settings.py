@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     
     # Stripe Configuration
     STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
+    STRIPE_WEBHOOK_SECRET: str = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     
     # Test Cardholder Configuration
     TEST_CARDHOLDER_ID: str = os.environ.get("TEST_CARDHOLDER_ID", "")
