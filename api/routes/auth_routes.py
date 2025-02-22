@@ -34,7 +34,7 @@ async def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.name}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -45,8 +45,8 @@ async def register_user(
     password: str,
     db: Session = Depends(get_db)
 ):
-    # Check if username already exists
-    if db.query(User).filter(User.username == username).first():
+    # Check if name already exists
+    if db.query(User).filter(User.name == username).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered"
@@ -58,14 +58,13 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
-    # Create new user
+        
+    # Create new user with hashed password
     hashed_password = get_password_hash(password)
     new_user = User(
-        username=username,
+        name=username,
         email=email,
-        hashed_password=hashed_password,
-        is_active=True
+        hashed_password=hashed_password
     )
     
     db.add(new_user)
@@ -75,7 +74,7 @@ async def register_user(
     # Create access token for the new user
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": new_user.username}, expires_delta=access_token_expires
+        data={"sub": new_user.name}, expires_delta=access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
@@ -83,6 +82,6 @@ async def register_user(
 @router.get("/me", response_model=Dict[str, str])
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return {
-        "username": current_user.username,
+        "name": current_user.name,
         "email": current_user.email
     }
