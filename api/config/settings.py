@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     TEST_CARDHOLDER_COUNTRY: str = os.environ.get("TEST_CARDHOLDER_COUNTRY", "IE")
     
     class Config:
-        env_file = ".env"
+        env_file = "/home/surtr/Team-3/api/.env"
+        env_file_encoding = "utf-8"
         case_sensitive = True
 
 @lru_cache()

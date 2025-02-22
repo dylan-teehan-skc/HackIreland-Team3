@@ -70,16 +70,21 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         authorization = event.data.object
         # Handle virtual card transaction authorization
         print(f"Processing authorization for card: {authorization.card.id}")
+        # approve the authorization
+        stripe.issuing.Authorization.approve(authorization.id)
+        
         # TODO: Implement your business logic here
         # For example:
         # - Log the transaction
         # - Update transaction records
         # - Send notifications
+
         
     elif event.type == "issuing_transaction.created":
         transaction = event.data.object
         # Handle completed transaction
         print(f"Processing transaction: {transaction.id}")
         # TODO: Implement your business logic here
+        stripe.issuing.Transaction.approve(transaction.id)
         
     return {"status": "success"}
