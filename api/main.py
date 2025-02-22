@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import api.database as database 
 from .models.base import Base
 from .config import get_settings, setup_logging
@@ -35,6 +36,15 @@ app = FastAPI(
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
     }
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Include routers
