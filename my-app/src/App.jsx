@@ -9,6 +9,8 @@ import Footer from './components/Footer';
 import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
 
+// Inside the Routes component
+
 function App() {
   return (
     <BrowserRouter>
