@@ -3,6 +3,7 @@
 
 Plan:
 subscription manager:
+!
 
 => Dashboard of all subs & spending => Data Analysis
 
