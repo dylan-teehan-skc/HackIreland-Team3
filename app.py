@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from config import config
 from lib_logging import setup_logging
 import os
@@ -10,16 +11,18 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
     
+    # Enable CORS for all routes
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    
     # Load configuration
     app.config.from_object(config[config_name])
     
     # Setup logging
     setup_logging(app)
-    
-    @app.route('/')
-    def index():
-        app.logger.info('Index page accessed')
-        return 'Hello, World!'
+
+    # Register blueprints
+    from api import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api')
 
     return app
 
