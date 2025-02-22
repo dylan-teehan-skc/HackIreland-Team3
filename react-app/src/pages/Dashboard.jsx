@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Link } from "react-router-dom";
+import { FileContext } from "../context/FileContext"; // Import the FileContext
 
 // Register the necessary components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -8,7 +10,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const Dashboard = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [totalSpent, setTotalSpent] = useState(0);
-  const [fileId, setFileId] = useState(''); // Start with an empty file ID
+  const { fileId, setFileId } = useContext(FileContext); // Use the FileContext
 
   useEffect(() => {
     if (!fileId) return; // Do nothing if fileId is not set
@@ -160,7 +162,11 @@ const Dashboard = () => {
               <tbody>
                 {subscriptions.map((sub) => (
                   <tr key={`${sub.Description}-${sub.Amount}-${sub.Date}`} className="border-b border-gray-700 hover:bg-gray-750 transition-colors duration-200">
-                    <td className="py-4 px-6 text-sm font-medium text-gray-300">{sub.Description}</td>
+                    <td className="py-4 px-6 text-sm font-medium text-gray-300">
+                      <Link to={`/subscription/${fileId}/${encodeURIComponent(sub.Description)}/${sub.Amount}`}>
+                        {sub.Description}
+                      </Link>
+                    </td>
                     <td className="py-4 px-6 text-sm text-gray-300">${sub.Amount.toFixed(2)}</td>
                     <td className="py-4 px-6 text-sm text-gray-300">{sub.Date}</td>
                     <td className="py-4 px-6 text-sm text-gray-300">{sub.Estimated_Next}</td>
