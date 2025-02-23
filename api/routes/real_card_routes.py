@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+import stripe
+from ..config import settings
 
 from ..models import User, RealCard
 from ..auth import get_current_active_user
@@ -21,9 +23,8 @@ router = APIRouter(
 )
 
 class RealCardCreate(BaseModel):
-    card_number: str
+    payment_method_id: str  # Stripe payment method ID from frontend
     card_holder_name: str
-    expiry_date: str
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
 async def add_real_card(
@@ -43,19 +44,60 @@ async def add_real_card(
         )
     
     try:
-        # Create new real card
-        real_card = RealCard(
-            card_number=card_data.card_number,
-            card_holder_name=card_data.card_holder_name,
-            expiry_date=card_data.expiry_date
-        )
-        
-        # Associate the real card with the current persistent user
-        real_card.user = current_user
-        
-        # Add and commit
-        db.add(real_card)
-        db.commit()
+        try:
+            # Verify the user has a Stripe customer ID
+            if not current_user.stripe_customer_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='User does not have a Stripe customer ID'
+                )
+
+            # Retrieve payment method to get card details
+            payment_method = stripe.PaymentMethod.retrieve(card_data.payment_method_id)
+            if not payment_method or payment_method.type != 'card':
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Invalid payment method ID'
+                )
+
+            # Attach payment method to customer if not already attached
+            if payment_method.customer != current_user.stripe_customer_id:
+                stripe.PaymentMethod.attach(
+                    card_data.payment_method_id,
+                    customer=current_user.stripe_customer_id,
+                )
+
+            # Set as default payment method
+            stripe.Customer.modify(
+                current_user.stripe_customer_id,
+                invoice_settings={
+                    'default_payment_method': card_data.payment_method_id
+                }
+            )
+
+            # Create new real card in our database
+            card = payment_method.card
+            real_card = RealCard(
+                card_number=f"**** **** **** {card.last4}",  # Only store last 4 digits
+                card_holder_name=card_data.card_holder_name,
+                expiry_date=f"{card.exp_month:02d}/{str(card.exp_year)[-2:]}",
+                cvc="***",  # Don't store actual CVC
+                stripe_payment_method_id=card_data.payment_method_id
+            )
+
+            # Associate the real card with the current persistent user
+            real_card.user = current_user
+
+            # Add and commit
+            db.add(real_card)
+            db.commit()
+            
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error while adding card for user {current_user.id}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Failed to add card to Stripe: {str(e)}'
+            )
         
         # Refresh user object to get updated relationships
         db.refresh(current_user)
@@ -78,6 +120,7 @@ class RealCardResponse(BaseModel):
     card_holder_name: str
     card_number: str
     expiry_date: str
+    cvc: str
 
 @router.get('/', response_model=RealCardResponse)
 async def get_real_card(
