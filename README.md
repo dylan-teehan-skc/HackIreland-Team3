@@ -13,7 +13,7 @@ Difficulty in ensuring you are getting the best/cheapest alternative for a certa
 
 (What it does) Our platform achieves:
 Overview: A clear dashboard shows all your subscriptions, costs, and upcoming due dates.
-=> Virtual card creation to allow flexible sharing: 
+Virtual card creation to allow flexible sharing: 
 Customize how expenses are divided among friends, family, or colleagues.
 Helps the user analyse their current expenditure accross their subscriprions:
 This solution is designed to simplify your life by keeping your recurring payments organized and making it easier to share expenses, saving you both time and money.
