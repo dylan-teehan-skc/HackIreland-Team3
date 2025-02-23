@@ -5,7 +5,7 @@ Plan:
 subscription manager
 
 Inspiration:
-We were inspired to build this tool by the following problems:
+We were inspired to build this tool by the following problems
 => Difficulty in splitting subscription costs
 => Difficult to remember upcoming subscription costs
 => Difficulty in tracking and analysing outgoings towards subscriptions
@@ -52,4 +52,4 @@ This solution is designed to simplify your life by keeping your recurring paymen
 
 
 TODO:
-ADD WORDS OF SHAKESPEAR INTO CODEBASE!
+ADD WORDS OF SHAKESPEAR 
