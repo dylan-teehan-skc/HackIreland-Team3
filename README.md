@@ -27,13 +27,8 @@ Secure & Reliable: Enjoy a smooth and safe experience every time you log in.
 We are using a flask backend with a react front end.
 
 
-
-
-
-
 Future work (Future Vision):
 We aim to make this into a browswer extension.
-
 
 Description:
 
