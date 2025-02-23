@@ -64,7 +64,7 @@ const Header = () => {
             <>
               {!hasCard && (
                 <Link to="/add-card" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
-                  Add Card
+                  Add a Card
                 </Link>
               )}
               <Link to="/account" className="bg-transparent border-2 border-purple-600 text-purple-600 hover:text-white hover:bg-purple-600 font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
