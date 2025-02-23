@@ -5,6 +5,8 @@ __pycache__
 .env
 *.db
 
+
+
 # dependencies
 /node_modules
 /.pnp
