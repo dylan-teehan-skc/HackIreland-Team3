@@ -5,7 +5,7 @@ Plan:
 subscription manager
 
 Inspiration:
-=> Difficulty in splitting subscription costs
+Difficulty in splitting subscription costs
 Difficult to remember upcoming subscription costs
 Difficulty in tracking and analysing outgoings towards subscriptions
 Difficulty in ensuring you are getting the best/cheapest alternative for a certain software
