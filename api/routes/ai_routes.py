@@ -62,6 +62,7 @@ async def generate_subscription_info(request: SubscriptionRequest):
             '''
             "Ensure the response is **only valid JSON** with no additional text, explanations, or markdown formatting. "
             "Do not include introductory phrases or any content outside the JSON block."
+            "Use reason in your answers - maybe start with 'you should use this over x because...' or 'this is better than y because...'"
         )"""
 
         # Call the OpenAI API using the chat completion method

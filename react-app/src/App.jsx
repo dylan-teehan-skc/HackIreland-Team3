@@ -9,6 +9,7 @@ import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import Account from "./pages/Account";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { FileProvider } from "./context/FileContext";
 import './App.css';
@@ -22,8 +23,9 @@ function App() {
           <main>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
               <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/account" element={<Account />} />
                 <Route path="/subscription/:id" element={<SubscriptionDetails />} />
                 <Route path="/subscriptions" element={<SubscriptionManager />} />
                 <Route path="/split-subscription" element={<SplitSubscription />} />
