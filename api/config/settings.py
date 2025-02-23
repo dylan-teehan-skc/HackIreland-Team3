@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = os.environ.get("SECRET_KEY", "dev-key-please-change")
-    print('SECRET_KEY', SECRET_KEY)
     
     # Logging Configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO")

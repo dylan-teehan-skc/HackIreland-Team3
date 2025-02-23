@@ -11,6 +11,7 @@ import logging
 import os
 import json
 from datetime import datetime, timedelta
+from typing import List
 
 router = APIRouter(
     prefix="/subscriptions",
@@ -61,16 +62,20 @@ async def create_subscriptions_from_file(
                 description=sub["Description"],
                 amount=sub["Amount"],
                 date=datetime.strptime(sub["Dates"][-1], '%Y-%m-%d').date(),
-                estimated_next_date=datetime.strptime(sub["Estimated_Next"], '%Y-%m-%d').date(),
+                estimated_next_date=datetime.strptime(sub["Estimated_Next"], '%Y-%m-%d').date() if sub.get("Estimated_Next") else None,
                 user_id=current_user.id,
-                file_id=uploaded_file.id
+                file_id=uploaded_file.id,
+                group_id=sub.get("GroupID")  # Optional group association
             )
             db.add(subscription)
-        
+            logger.info(f"Prepared to add subscription: {sub['Description']} for user ID: {current_user.id}")
+
         db.commit()
+        logger.info(f"Successfully saved {len(subscriptions_data)} subscriptions for user ID: {current_user.id}")
         return {"message": "Subscriptions created successfully"}
         
     except Exception as e:
+        db.rollback()
         logger.error(f"Error creating subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -269,4 +274,27 @@ async def delete_subscription(file_id: str, description: str, amount: float, dat
         return {"message": "Subscription deleted"}
     except Exception as e:
         logger.error(f"Error deleting subscription: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error deleting subscription") 
+        raise HTTPException(status_code=500, detail="Error deleting subscription")
+
+@router.post("/subscriptions/create")
+async def create_subscriptions(subscriptions: List[dict], db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    try:
+        for sub in subscriptions:
+            new_subscription = Subscription(
+                description=sub['description'],
+                amount=sub['amount'],
+                date=sub['date'],
+                estimated_next_date=sub.get('estimated_next_date'),
+                user_id=current_user.id,  # Associate with the current user
+                file_id=sub['file_id']
+            )
+            db.add(new_subscription)
+            logger.info(f"Prepared to add subscription: {sub['description']} for user ID: {current_user.id}")
+
+        db.commit()
+        logger.info(f"Successfully saved {len(subscriptions)} subscriptions for user ID: {current_user.id}")
+        return {"message": "Subscriptions created successfully"}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e)) 
