@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Placeholder from "../images/Stripe-1.jpeg"
 import DashboardImage from "../images/dashboardv1.png"
 import InsightsImage from "../images/insightsv1.png"
+import SplitsImage from "../images/splitv1.png"
 
 const LandingPage = () => {
   return (
@@ -70,7 +71,7 @@ const LandingPage = () => {
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-1 rounded-lg">
                 <div className="bg-gray-900 p-6 rounded-lg">
                   <img
-                    src={Placeholder}
+                    src={SplitsImage}
                     alt="Split Expenses"
                     className="rounded-lg"
                   />
