@@ -4,29 +4,47 @@ import { Link } from "react-router-dom";
 const Account = () => {
   const [userDetails, setUserDetails] = useState(null);
   const [error, setError] = useState("");
+  const [hasCard, setHasCard] = useState(false);
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("access_token");
+      
+      // Fetch user details
       try {
-        const token = localStorage.getItem("access_token");
-        const response = await fetch("http://localhost:8000/auth/me", {
+        const userResponse = await fetch("http://localhost:8000/auth/me", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!response.ok) {
+        if (!userResponse.ok) {
           throw new Error("Failed to fetch user details");
         }
 
-        const data = await response.json();
-        setUserDetails(data);
+        const userData = await userResponse.json();
+        setUserDetails(userData);
       } catch (err) {
         setError(err.message || "An error occurred. Please try again.");
       }
+
+      // Check if user has a card
+      try {
+        const cardResponse = await fetch("http://localhost:8000/real-cards/has-card", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (cardResponse.ok) {
+          const cardData = await cardResponse.json();
+          setHasCard(cardData.has_card);
+        }
+      } catch (error) {
+        console.error("Error checking card status:", error);
+      }
     };
 
-    fetchUserDetails();
+    fetchData();
   }, []);
 
   if (error) {
@@ -50,13 +68,6 @@ const Account = () => {
           <p><strong>Date of Birth:</strong> {userDetails.date_of_birth}</p>
           <p><strong>Address:</strong> {userDetails.address_line1}, {userDetails.city}, {userDetails.state}, {userDetails.postal_code}, {userDetails.country}</p>
           <p><strong>Phone Number:</strong> {userDetails.phone_number}</p>
-          
-          <Link 
-            to="/add-card" 
-            className="mt-4 block w-full text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Add Payment Card
-          </Link>
         </div>
       </div>
     </div>

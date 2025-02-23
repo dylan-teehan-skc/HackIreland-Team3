@@ -5,6 +5,29 @@ import "../index.css";
 const Header = () => {
   const isAuthenticated = !!localStorage.getItem("access_token");
   const navigate = useNavigate();
+  const [hasCard, setHasCard] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkCard = async () => {
+      if (isAuthenticated) {
+        try {
+          const token = localStorage.getItem("access_token");
+          const response = await fetch("http://localhost:8000/real-cards/has-card", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setHasCard(data.has_card);
+          }
+        } catch (error) {
+          console.error("Error checking card status:", error);
+        }
+      }
+    };
+    checkCard();
+  }, [isAuthenticated]);
 
   const handleSignOut = () => {
     localStorage.removeItem("access_token");
@@ -27,6 +50,14 @@ const Header = () => {
           >
             Dashboard
           </Link>
+          {isAuthenticated && (
+            <Link
+              to="/groups"
+              className="text-gray-300 hover:text-white font-semibold text-lg transition duration-300 hover:scale-105"
+            >
+              Groups
+            </Link>
+          )}
         </div>
         <div className="flex space-x-6">
           {isAuthenticated ? (
@@ -34,6 +65,11 @@ const Header = () => {
               <Link to="/account" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
                 Your Account
               </Link>
+              {!hasCard && (
+                <Link to="/add-card" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
+                  Add Card
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="bg-transparent border-2 border-purple-600 text-purple-600 hover:text-white hover:bg-purple-600 font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
