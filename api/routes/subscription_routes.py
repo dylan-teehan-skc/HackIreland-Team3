@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
-from api.routes.file_routes import file_storage
+from api.routes.file_routes import get_file_path
 from api.services.subscription_parser import process_subscriptions, get_subscriptions_sorted_by_date
 from api.database import get_db
 from api.auth import get_current_active_user
@@ -30,8 +30,8 @@ async def create_subscriptions_from_file(
     """Create subscriptions from an uploaded file and associate them with the current user."""
     try:
         # Get the file path and verify it exists
-        file_path = file_storage.get(file_id)
-        if not file_path or not os.path.exists(file_path):
+        file_path = get_file_path(file_id)
+        if not file_path:
             raise HTTPException(status_code=404, detail="File not found")
             
         # Process subscriptions from the file
@@ -134,8 +134,8 @@ async def get_subscriptions(file_id: str):
     logger.debug(f"Fetching subscriptions for file ID: {file_id}")
     try:
         # Retrieve the file path using the file ID from in-memory storage
-        file_path = file_storage.get(file_id)
-        if not file_path or not os.path.exists(file_path):
+        file_path = get_file_path(file_id)
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 
@@ -152,8 +152,8 @@ async def get_sorted_subscriptions(file_id: str):
     logger.debug(f"Fetching sorted subscriptions for file ID: {file_id}")
     try:
         # Retrieve the file path using the file ID from in-memory storage
-        file_path = file_storage.get(file_id)
-        if not file_path or not os.path.exists(file_path):
+        file_path = get_file_path(file_id)
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 
@@ -170,8 +170,8 @@ async def filter_subscriptions(file_id: str, price: float = Query(None), descrip
     logger.debug(f"Filtering subscriptions for file ID: {file_id} with price: {price}, description: {description}")
     try:
         # Retrieve the file path using the file ID from in-memory storage
-        file_path = file_storage.get(file_id)
-        if not file_path or not os.path.exists(file_path):
+        file_path = get_file_path(file_id)
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 
@@ -195,9 +195,9 @@ async def filter_subscriptions(file_id: str, price: float = Query(None), descrip
 async def total_spent(file_id: str):
     logger.debug(f"Calculating total spent for file ID: {file_id}")
     try:
-        file_path = file_storage.get(file_id)
+        file_path = get_file_path(file_id)
         logger.debug(f"File path: {file_path}")
-        if not file_path or not os.path.exists(file_path):
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 
@@ -220,11 +220,12 @@ async def total_spent(file_id: str):
 
 @router.get("/specific_spent/{file_id}", responses={200: {"description": "Amount spent on a specific subscription in the last 12 months", "content": {"application/json": {"example": {"specific_spent": 59.97}}}}})
 async def specific_spent(file_id: str, description: str, price: float):
+    logger.setLevel(logging.DEBUG)
     logger.debug(f"Calculating specific spent for file ID: {file_id}, description: {description}, price: {price}")
     try:
-        file_path = file_storage.get(file_id)
+        file_path = get_file_path(file_id)
         logger.debug(f"File path: {file_path}")
-        if not file_path or not os.path.exists(file_path):
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 
@@ -244,15 +245,15 @@ async def specific_spent(file_id: str, description: str, price: float):
         return {"specific_spent": specific_spent}
     except Exception as e:
         logger.error(f"Error calculating specific spent: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error calculating specific spent")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/subscriptions/{file_id}/{description}/{amount}/{date}", responses={200: {"description": "Subscription deleted"}})
 async def delete_subscription(file_id: str, description: str, amount: float, date: str):
     logger.debug(f"Deleting subscription for file ID: {file_id} with description: {description}, amount: {amount}, date: {date}")
     try:
         # Retrieve the file path using the file ID from in-memory storage
-        file_path = file_storage.get(file_id)
-        if not file_path or not os.path.exists(file_path):
+        file_path = get_file_path(file_id)
+        if not file_path:
             logger.error(f"File ID {file_id} not found")
             raise HTTPException(status_code=404, detail="File ID not found")
 

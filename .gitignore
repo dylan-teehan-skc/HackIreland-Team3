@@ -38,3 +38,5 @@ debug.log
 *.swo
 
 .venv
+
+*.xlsx

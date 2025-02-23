@@ -62,23 +62,25 @@ async def generate_subscription_info(request: SubscriptionRequest):
             "Do not guess the cancellation link, actually do research and find the cancellation link."
         )"""
 
+        # Create OpenAI client
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        
         # Call the OpenAI API using the chat completion method
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+        response = client.chat.completions.create(
+            model="gpt-4o",  # Updated model name
             messages=[
                 {"role": "system", "content": "You are a helpful AI that strictly outputs JSON."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
-            temperature=0.3,  # Lower temperature to make responses more deterministic
-            api_key=OPENAI_API_KEY
+            temperature=0.3  # Lower temperature to make responses more deterministic
         )
 
         # Log the AI response
         print("AI Response:", response)
 
         # Extract and validate the generated JSON text
-        generated_text = response.choices[0].message["content"].strip()
+        generated_text = response.choices[0].message.content.strip()
 
         # Clean up the response
         if generated_text.startswith("```json"):

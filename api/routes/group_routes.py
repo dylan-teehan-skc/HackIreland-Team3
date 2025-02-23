@@ -13,6 +13,7 @@ from ..services.cardCreation import create_cardholder, create_virtual_card, get_
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 router = APIRouter(
     prefix="/groups",
@@ -45,9 +46,11 @@ async def create_group(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Creating new group '{group_data.name}' for user {current_user.id}")
     
     # Check if user has a real card
     if not current_user.real_card:
+        logger.warning(f"User {current_user.id} attempted to create group without real card")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='You must add a real card before creating a group'
@@ -62,17 +65,20 @@ async def create_group(
         db.add(new_group)
         db.flush()  # Get the group ID
         
+        logger.info(f"Created group {new_group.id} with name '{group_data.name}'")
+        
         logging.debug(f"User {current_user.id} is creating group {new_group.id}")
         logging.debug(f"User {current_user.id} is from {current_user.country}")
         # Verify country is Ireland before creating cardholder
         if current_user.country != 'IE':
-            logging.debug(f"User {current_user.id} is from {current_user.country}, so can't create groups")
+            logger.warning(f"User {current_user.id} from {current_user.country} attempted to create group")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Only users from Ireland (IE) can create groups at this time'
             )
 
         # Create Stripe cardholder for the group
+        logger.info(f"Creating Stripe cardholder for group {new_group.id}")
         display_name = f"{current_user.first_name} {current_user.last_name}"
         cardholder_result = create_cardholder(
             name=display_name,  # Use admin's full name for Stripe cardholder
@@ -91,20 +97,27 @@ async def create_group(
         )
         
         if not cardholder_result["success"]:
+            logger.error(f"Failed to create Stripe cardholder for group {new_group.id}: {cardholder_result['error']}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Failed to create Stripe cardholder: {cardholder_result["error"]}'
             )
             
+        logger.info(f"Successfully created Stripe cardholder for group {new_group.id}")
+        
         # Create Stripe virtual card
+        logger.info(f"Creating virtual card for group {new_group.id}")
         card_result = create_virtual_card(cardholder_result["cardholder"].id)
 
         if not card_result["success"]:
+            logger.error(f"Failed to create virtual card for group {new_group.id}: {card_result['error']}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Failed to create virtual card: {card_result["error"]}'
             )
 
+        logger.info(f"Successfully created virtual card for group {new_group.id}")
+        
         # Store virtual card details with the group
         new_group.virtual_card_id = card_result["card"].id
         new_group.virtual_card_last4 = card_result["card"].last4
@@ -129,6 +142,7 @@ async def create_group(
         db.add(card_member)
         
         db.commit()
+        logger.info(f"Group {new_group.id} created successfully")
         return {
             'message': 'Group created successfully',
             'group_id': new_group.id,
@@ -150,9 +164,11 @@ async def join_group(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} attempting to join group {group_id}")
     
     # Check if user has a real card
     if not current_user.real_card:
+        logger.warning(f"User {current_user.id} attempted to join group without real card")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='You must add a real card before joining a group'
@@ -162,6 +178,7 @@ async def join_group(
         # Check if group exists
         group = db.query(Group).get(group_id)
         if not group:
+            logger.warning(f"User {current_user.id} attempted to join non-existent group {group_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Group not found'
@@ -173,6 +190,7 @@ async def join_group(
         ).first()
         
         if existing_membership:
+            logger.warning(f"User {current_user.id} is already a member of group {group_id}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Already a member of this group'
@@ -186,10 +204,11 @@ async def join_group(
         )
         db.add(member)
         db.commit()
-        
+        logger.info(f"User {current_user.id} joined group {group_id} successfully")
         return {'message': 'Successfully joined group'}
     except IntegrityError:
         db.rollback()
+        logger.error(f"Failed to add user {current_user.id} to group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Failed to join group'
@@ -210,11 +229,13 @@ async def get_group_members(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} retrieving members of group {group_id}")
     """Get all members of a group"""
     try:
         # Check if group exists
         group = db.query(Group).get(group_id)
         if not group:
+            logger.warning(f"User {current_user.id} attempted to retrieve members of non-existent group {group_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Group not found'
@@ -224,6 +245,7 @@ async def get_group_members(
             VirtualCard.group_id == group_id
         ).all()
         
+        logger.info(f"Successfully retrieved members of group {group_id}")
         return [
             GroupMember(
                 id=member.id,
@@ -237,6 +259,7 @@ async def get_group_members(
         ]
         
     except Exception as e:
+        logger.error(f"Failed to retrieve members of group {group_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -253,12 +276,14 @@ async def get_user_groups(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} retrieving their groups")
     try:
         # Get all groups user is a member of
         groups = db.query(Group).join(VirtualCard).join(CardMember).filter(
             CardMember.user_id == current_user.id
         ).all()
         
+        logger.info(f"Successfully retrieved groups for user {current_user.id}")
         return [
             UserGroup(
                 id=group.id,
@@ -269,6 +294,7 @@ async def get_user_groups(
         ]
         
     except Exception as e:
+        logger.error(f"Failed to retrieve groups for user {current_user.id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -281,15 +307,18 @@ async def invite_to_group(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} attempting to invite {invite_data.username} to group {group_id}")
     # Check if group exists and user is admin
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
+        logger.warning(f"User {current_user.id} attempted to invite to non-existent group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Group not found'
         )
     
     if group.admin_id != current_user.id:
+        logger.warning(f"User {current_user.id} attempted to invite to group {group_id} without admin privileges")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Only group admin can invite users'
@@ -298,6 +327,7 @@ async def invite_to_group(
     # Find invitee by username
     invitee = db.query(User).filter(User.username == invite_data.username).first()
     if not invitee:
+        logger.warning(f"User {current_user.id} attempted to invite non-existent user {invite_data.username}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='User not found'
@@ -310,6 +340,7 @@ async def invite_to_group(
     ).first()
     
     if existing_member:
+        logger.warning(f"User {current_user.id} attempted to invite {invite_data.username} who is already a member of group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='User is already a member of this group'
@@ -323,6 +354,7 @@ async def invite_to_group(
     ).first()
     
     if existing_invitation:
+        logger.warning(f"User {current_user.id} attempted to invite {invite_data.username} who has already been invited to group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='User has already been invited to this group'
@@ -337,7 +369,7 @@ async def invite_to_group(
     
     db.add(invitation)
     db.commit()
-    
+    logger.info(f"User {current_user.id} invited {invite_data.username} to group {group_id} successfully")
     return {'message': f'Invitation sent to {invitee.username}'}
 
 @router.get('/invitations/pending', response_model=List[dict])
@@ -345,11 +377,13 @@ async def get_pending_invitations(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} retrieving pending invitations")
     invitations = db.query(GroupInvitation).filter(
         GroupInvitation.invitee_id == current_user.id,
         GroupInvitation.accepted == False
     ).all()
     
+    logger.info(f"Successfully retrieved pending invitations for user {current_user.id}")
     return [{
         'id': inv.id,
         'group_name': inv.group.name,
@@ -363,6 +397,7 @@ async def accept_invitation(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} attempting to accept invitation {invitation_id}")
     invitation = db.query(GroupInvitation).filter(
         GroupInvitation.id == invitation_id,
         GroupInvitation.invitee_id == current_user.id,
@@ -370,6 +405,7 @@ async def accept_invitation(
     ).first()
     
     if not invitation:
+        logger.warning(f"User {current_user.id} attempted to accept non-existent invitation {invitation_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Invitation not found or already accepted'
@@ -378,6 +414,7 @@ async def accept_invitation(
     # Add user to group
     group = invitation.group
     if not group.virtual_card:
+        logger.error(f"Group {group.id} does not have a virtual card")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Group does not have a virtual card'
@@ -391,7 +428,7 @@ async def accept_invitation(
     invitation.accepted = True
     db.add(new_member)
     db.commit()
-    
+    logger.info(f"User {current_user.id} accepted invitation {invitation_id} successfully")
     return {'message': f'Successfully joined group {group.name}'}
 
 @router.get('/{group_id}/card')
@@ -400,6 +437,7 @@ async def get_group_card_details(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} retrieving card details for group {group_id}")
     # Check if user is a member of the group by joining through virtual_cards
     member = db.query(CardMember).join(
         VirtualCard, CardMember.card_id == VirtualCard.id
@@ -409,6 +447,7 @@ async def get_group_card_details(
     ).first()
     
     if not member:
+        logger.warning(f"User {current_user.id} is not a member of group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You are not a member of this group'
@@ -417,21 +456,23 @@ async def get_group_card_details(
     # Retrieve the virtual card id associated with the group id
     virtual_card = db.query(VirtualCard).filter(VirtualCard.group_id == group_id).first()
     if not virtual_card:
+        logger.error(f"Virtual card not found for group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Virtual card not found for this group'
         )
 
-    print(virtual_card.virtual_card_id)
 
     # Return the virtual card id along with other card details
     card_data = get_virtual_card(virtual_card.virtual_card_id)
     if not card_data:
+        logger.error(f"Failed to retrieve card data for group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Group not found'
         )
     
+    logger.info(f"Successfully retrieved card details for group {group_id}")
     return {
         'virtual_card_id': virtual_card.id,
         'card_details': {
@@ -450,11 +491,13 @@ async def delete_group(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"User {current_user.id} attempting to delete group {group_id}")
     """Delete a group. Only the group admin can delete their group."""
     
     # Get the group
     group = db.query(Group).get(group_id)
     if not group:
+        logger.warning(f"User {current_user.id} attempted to delete non-existent group {group_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Group not found'
@@ -462,6 +505,7 @@ async def delete_group(
     
     # Check if current user is the admin
     if group.admin_id != current_user.id:
+        logger.warning(f"User {current_user.id} attempted to delete group {group_id} without admin privileges")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Only the group admin can delete the group'
@@ -481,12 +525,12 @@ async def delete_group(
         # Delete the group
         db.delete(group)
         db.commit()
-        
+        logger.info(f"Group {group_id} deleted successfully")
         return {'message': 'Group deleted successfully'}
         
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deleting group: {e}")
+        logger.error(f"Failed to delete group {group_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to delete group'
