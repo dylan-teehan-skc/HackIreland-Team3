@@ -7,6 +7,10 @@ from ..models import User, RealCard
 from ..auth import get_current_active_user
 from ..database import get_db
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/real-cards",
     tags=["Real Cards"],
