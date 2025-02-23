@@ -18,3 +18,4 @@ class Group(Base):
     admin = relationship("User", back_populates="groups")
     virtual_card = relationship("VirtualCard", uselist=False, back_populates="group")
     members = relationship("User", secondary="group_invitations", primaryjoin="and_(Group.id == GroupInvitation.group_id, GroupInvitation.accepted == True)", secondaryjoin="GroupInvitation.invitee_id == User.id", viewonly=True)
+    subscriptions = relationship("Subscription", back_populates="group") 

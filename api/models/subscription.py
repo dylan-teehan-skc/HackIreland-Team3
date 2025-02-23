@@ -13,7 +13,7 @@ class Subscription(Base):
     estimated_next_date = Column(Date, nullable=True)
     
     # Foreign key to the user who owns this subscription
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     # Relationship to the user
     user = relationship("User", back_populates="subscriptions")
     
@@ -21,3 +21,8 @@ class Subscription(Base):
     file_id = Column(Integer, ForeignKey('uploaded_files.id'), nullable=False)
     # Relationship to the uploaded file
     uploaded_file = relationship("UploadedFile", back_populates="subscriptions")
+
+    # Foreign key to the group associated with this subscription
+    group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)
+    # Relationship to the group
+    group = relationship("Group", back_populates="subscriptions")

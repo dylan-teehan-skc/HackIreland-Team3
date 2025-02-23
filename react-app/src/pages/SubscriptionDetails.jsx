@@ -11,6 +11,8 @@ const SubscriptionDetails = () => {
   const [totalSpent, setTotalSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState('');
 
   useEffect(() => {
     const subscription = subscriptions.find(sub => sub.Description === description && sub.Amount === parseFloat(amount));
@@ -43,6 +45,49 @@ const SubscriptionDetails = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    // Fetch available groups
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/groups');
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setGroups(data);
+        } else {
+          console.error('Unexpected data format:', data);
+          setGroups([]); // Fallback to an empty array
+        }
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+        setGroups([]); // Ensure groups is an array even if the fetch fails
+      }
+    };
+
+    fetchGroups();
+  }, []);
+
+  const handleAddToGroup = async () => {
+    if (!selectedGroup) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/subscriptions/${subscriptionDetails.id}/add-to-group`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ groupId: selectedGroup }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add subscription to group');
+      }
+
+      alert('Subscription added to group successfully');
+    } catch (error) {
+      console.error('Error adding subscription to group:', error);
+    }
+  };
+
   if (loading || !subscriptionDetails) {
     return <div>Loading...</div>;
   }
@@ -68,9 +113,31 @@ const SubscriptionDetails = () => {
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
           {subscriptionDetails.Description}
         </h1>
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="group-select" className="block text-sm font-medium mb-1">Add to Group:</label>
+            <select
+              id="group-select"
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="bg-gray-800 text-white p-2 rounded-lg"
+            >
+              <option value="">Select a group</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAddToGroup}
+              className="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 hover:bg-purple-700"
+            >
+              Add
+            </button>
+          </div>
           {cancellation_link && (
-            <a href={cancellation_link} target="_blank" rel="noopener noreferrer" className="mr-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
+            <a href={cancellation_link} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
               Cancel Subscription
             </a>
           )}

@@ -20,6 +20,23 @@ const Dashboard = () => {
   const availableMonths = [...new Set(subscriptions.map(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' })))];
 
   useEffect(() => {
+    // Retrieve data from local storage on component mount
+    const storedFileId = localStorage.getItem('fileId');
+    const storedSubscriptions = localStorage.getItem('subscriptions');
+    const storedTotalSpent = localStorage.getItem('totalSpent');
+
+    if (storedFileId) {
+      setFileId(storedFileId);
+    }
+    if (storedSubscriptions) {
+      setSubscriptions(JSON.parse(storedSubscriptions));
+    }
+    if (storedTotalSpent) {
+      setTotalSpent(parseFloat(storedTotalSpent));
+    }
+  }, [setFileId, setSubscriptions, setTotalSpent]);
+
+  useEffect(() => {
     if (!fileId) return;
 
     const fetchSubscriptions = async () => {
@@ -33,6 +50,11 @@ const Dashboard = () => {
 
         const total = data.reduce((sum, sub) => sum + sub.Amount, 0);
         setTotalSpent(total);
+
+        // Store data in local storage
+        localStorage.setItem('fileId', fileId);
+        localStorage.setItem('subscriptions', JSON.stringify(data));
+        localStorage.setItem('totalSpent', total.toString());
       } catch (error) {
         console.error("Error fetching subscriptions:", error);
       }
@@ -59,6 +81,10 @@ const Dashboard = () => {
       // Recalculate the total spent
       const newTotal = subscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
       setTotalSpent(newTotal);
+
+      // Update local storage
+      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+      localStorage.setItem('totalSpent', newTotal.toString());
     } catch (error) {
       console.error("Error deleting subscription:", error);
     }
@@ -72,6 +98,7 @@ const Dashboard = () => {
     formData.append('file', file);
 
     try {
+      // Upload the file
       const response = await fetch('http://127.0.0.1:8000/files/upload', {
         method: 'POST',
         body: formData,
@@ -83,8 +110,31 @@ const Dashboard = () => {
 
       const data = await response.json();
       setFileId(data.file_id); // Update the file ID, triggering the useEffect to fetch data
+
+      // Fetch subscriptions from the uploaded file
+      const subscriptionsResponse = await fetch(`http://127.0.0.1:8000/subscriptions/from-file/${data.file_id}`);
+      if (!subscriptionsResponse.ok) {
+        throw new Error(`HTTP error! status: ${subscriptionsResponse.status}`);
+      }
+      const subscriptionsData = await subscriptionsResponse.json();
+
+      // Send subscriptions to the backend to save them
+      const saveResponse = await fetch('http://127.0.0.1:8000/subscriptions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`, // Include the user's token
+        },
+        body: JSON.stringify(subscriptionsData),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error(`HTTP error! status: ${saveResponse.status}`);
+      }
+
+      console.log("Subscriptions saved successfully");
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error uploading file or saving subscriptions:", error);
     }
   };
 
@@ -236,6 +286,19 @@ const Dashboard = () => {
   // Sort subscriptions by date in descending order
   const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
+  // Function to clear the fileId and related data
+  const handleClearData = () => {
+    setFileId(null); // Clear the fileId
+    setSubscriptions([]); // Clear subscriptions
+    setTotalSpent(0); // Reset total spent
+    document.getElementById('file-upload').value = ''; // Reset file input
+
+    // Clear local storage
+    localStorage.removeItem('fileId');
+    localStorage.removeItem('subscriptions');
+    localStorage.removeItem('totalSpent');
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="flex justify-between items-center mb-8">
@@ -244,25 +307,35 @@ const Dashboard = () => {
           Your Subscriptions
         </h1>
 
-        {/* File Upload */}
-        <div className="relative">
-          <input 
-            type="file" 
-            onChange={handleFileUpload} 
-            className="hidden" 
-            id="file-upload" 
-          />
-          <label 
-            htmlFor="file-upload" 
-            className="cursor-pointer bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
-            text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 
-            flex items-center space-x-2"
+        <div className="flex items-center space-x-4">
+          {/* Clear Data Button */}
+          <button
+            onClick={handleClearData}
+            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span>Upload Statement</span>
-          </label>
+            Clear
+          </button>
+
+          {/* File Upload */}
+          <div className="relative">
+            <input 
+              type="file" 
+              onChange={handleFileUpload} 
+              className="hidden" 
+              id="file-upload" 
+            />
+            <label 
+              htmlFor="file-upload" 
+              className="cursor-pointer bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
+              text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 
+              flex items-center space-x-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>Upload Statement</span>
+            </label>
+          </div>
         </div>
       </div>
 
