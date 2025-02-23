@@ -128,4 +128,35 @@ async def specific_spent(file_id: str, description: str, price: float):
         return {"specific_spent": specific_spent}
     except Exception as e:
         logger.error(f"Error calculating specific spent: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error calculating specific spent") 
+        raise HTTPException(status_code=500, detail="Error calculating specific spent")
+
+@router.delete("/subscriptions/{file_id}/{description}/{amount}/{date}", responses={200: {"description": "Subscription deleted"}})
+async def delete_subscription(file_id: str, description: str, amount: float, date: str):
+    logger.debug(f"Deleting subscription for file ID: {file_id} with description: {description}, amount: {amount}, date: {date}")
+    try:
+        # Retrieve the file path using the file ID from in-memory storage
+        file_path = file_storage.get(file_id)
+        if not file_path or not os.path.exists(file_path):
+            logger.error(f"File ID {file_id} not found")
+            raise HTTPException(status_code=404, detail="File ID not found")
+
+        # Process the subscriptions to get the current data
+        subscriptions_data = get_subscriptions_sorted_by_date(file_path)
+
+        # Find the subscription to delete
+        subscription_to_delete = next(
+            (sub for sub in subscriptions_data if sub["Description"] == description and sub["Amount"] == amount and sub["Date"] == date),
+            None
+        )
+        
+        if not subscription_to_delete:
+            logger.error(f"Subscription with description {description}, amount {amount}, date {date} not found")
+            raise HTTPException(status_code=404, detail="Subscription not found")
+
+        # Remove the subscription from the list
+        subscriptions_data = [sub for sub in subscriptions_data if not (sub["Description"] == description and sub["Amount"] == amount and sub["Date"] == date)]
+        logger.info(f"Subscription with description {description}, amount {amount}, date {date} deleted")
+        return {"message": "Subscription deleted"}
+    except Exception as e:
+        logger.error(f"Error deleting subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting subscription") 

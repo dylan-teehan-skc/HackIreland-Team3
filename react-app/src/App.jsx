@@ -10,28 +10,32 @@ import SplitSubscription from "./pages/SplitSubscription";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { FileProvider } from "./context/FileContext";
 import './App.css';
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route element={<ProtectedRoute />}>
+      <FileProvider>
+        <div className="app">
+          <Header />
+          <main>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/subscription/:id" element={<SubscriptionDetails />} />
-              <Route path="/subscriptions" element={<SubscriptionManager />} />
-              <Route path="/split" element={<SplitSubscription />} />
-            </Route>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+                <Route path="/subscriptions" element={<SubscriptionManager />} />
+                <Route path="/split-subscription" element={<SplitSubscription />} />
+              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/subscription/:fileId/:description/:amount" element={<SubscriptionDetails />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </FileProvider>
     </BrowserRouter>
   );
 }
