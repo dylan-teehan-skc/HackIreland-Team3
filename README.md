@@ -27,6 +27,3 @@ Key benefits include:
 Flexible Sharing: Customize how expenses are divided among friends, family, or colleagues.
 Secure & Reliable: Enjoy a smooth and safe experience every time you log in.
 This solution is designed to simplify your life by keeping your recurring payments organized and making it easier to share expenses, saving you both time and money.
-
-
-TODO:
