@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date
 
 from ..models import User
 from ..database import get_db
@@ -21,9 +22,16 @@ router = APIRouter(
     }
 )
 
+class LegalName(BaseModel):
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
+
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
+    username: Optional[str] = None
     email: Optional[str] = None
+    legal_name: Optional[LegalName] = None
+    date_of_birth: Optional[date] = None
     address_line1: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
@@ -33,8 +41,12 @@ class UserUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    name: str
+    username: str
     email: str
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
+    date_of_birth: date
     address_line1: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
@@ -57,6 +69,16 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     update_data = user_data.dict(exclude_unset=True)
+    
+    # Handle legal name update separately
+    if 'legal_name' in update_data:
+        legal_name = update_data.pop('legal_name')
+        if legal_name:
+            db_user.first_name = legal_name['first_name']
+            db_user.last_name = legal_name['last_name']
+            db_user.middle_name = legal_name.get('middle_name')
+    
+    # Update remaining fields
     for key, value in update_data.items():
         setattr(db_user, key, value)
 

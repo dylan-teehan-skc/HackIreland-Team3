@@ -56,12 +56,15 @@ async def add_real_card(
         # Refresh user object to get updated relationships
         db.refresh(current_user)
         
+        logger.info(f"User {current_user.id} added real card {real_card.id}")
+        
         return {
             'message': 'Real card added successfully',
             'card_holder_name': real_card.card_holder_name
         }
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        logger.error(f"Error adding real card for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Failed to add real card'

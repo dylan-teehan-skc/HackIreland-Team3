@@ -1,8 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date
+from pydantic import BaseModel
+from typing import Optional
 from api.services.cardCreation import create_cardholder, create_virtual_card, get_virtual_card, create_test_card, create_virtual_card_for_user
 from api.auth import get_current_active_user, get_db
 from sqlalchemy.orm import Session
 from api.models.user import User
+
+class LegalName(BaseModel):
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
 
 router = APIRouter(
     prefix="/cards",
@@ -19,6 +27,8 @@ async def create_cardholder_endpoint(
     city: str,
     state: str,
     postal_code: str,
+    date_of_birth: date,
+    full_legal_name: LegalName,
     country: str = "US"
 ):
     result = create_cardholder(
@@ -29,6 +39,8 @@ async def create_cardholder_endpoint(
         city=city,
         state=state,
         postal_code=postal_code,
+        date_of_birth=date_of_birth,
+        full_legal_name=full_legal_name.dict() if full_legal_name else None,
         country=country
     )
     return result

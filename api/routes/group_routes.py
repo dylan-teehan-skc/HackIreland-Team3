@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, validator
 
 from ..models import User, Group, VirtualCard, CardMember
@@ -69,15 +69,21 @@ async def create_group(
             )
 
         # Create Stripe cardholder for the group
+        display_name = f"{current_user.first_name} {current_user.last_name}"
         cardholder_result = create_cardholder(
-            name=current_user.name,  # Use admin's name for Stripe cardholder
+            name=display_name,  # Use admin's full name for Stripe cardholder
             email=current_user.email,  # Use admin's email for now
             phone_number=current_user.phone_number,
             address_line1=current_user.address_line1,
             city=current_user.city,
             state=current_user.state,
             postal_code=current_user.postal_code,
-            country=current_user.country  # Pass the user's country
+            country=current_user.country,  # Pass the user's country
+            date_of_birth=current_user.date_of_birth,
+            full_legal_name={
+                'first_name': current_user.first_name,
+                'last_name': current_user.last_name,
+            }
         )
         
         if not cardholder_result["success"]:
@@ -178,7 +184,10 @@ async def join_group(
 
 class GroupMember(BaseModel):
     id: int
-    name: str
+    username: str
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
     email: str
     is_admin: bool
 
@@ -205,7 +214,10 @@ async def get_group_members(
         return [
             GroupMember(
                 id=member.id,
-                name=member.name,
+                username=member.username,
+                first_name=member.first_name,
+                last_name=member.last_name,
+                middle_name=member.middle_name,
                 email=member.email,
                 is_admin=member.id == group.admin_id
             ) for member in members
@@ -219,7 +231,7 @@ async def get_group_members(
 
 class UserGroup(BaseModel):
     id: int
-    name: str
+    group_name: str  # This is the group's name, not the user's name
     is_admin: bool
     virtual_card_id: str
 
@@ -237,7 +249,7 @@ async def get_user_groups(
         return [
             UserGroup(
                 id=group.id,
-                name=group.name,
+                group_name=group.name,
                 is_admin=group.admin_id == current_user.id,
                 virtual_card_id=group.virtual_card.virtual_card_id
             ) for group in groups

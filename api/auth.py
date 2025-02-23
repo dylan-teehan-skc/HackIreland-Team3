@@ -75,7 +75,7 @@ def get_user(db: Session, username: str) -> Optional[User]:
         Optional[User]: User object if found, None otherwise
     """
     logger.debug(f"Fetching user {username} from database")
-    return db.query(User).filter(User.name == username).first()
+    return db.query(User).filter(User.username == username).first()
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
     """Authenticate a user by username and password.
@@ -138,17 +138,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        name: str = payload.get("sub")
-        if name is None:
+        username: str = payload.get("sub")
+        if username is None:
             logger.error("Token payload does not contain 'sub'")
             raise credentials_exception
     except JWTError:
         logger.error("JWT decoding failed")
         raise credentials_exception
     
-    user = get_user(db, name)
+    user = get_user(db, username)
     if user is None:
-        logger.error(f"User {name} not found after token decoding")
+        logger.error(f"User {username} not found after token decoding")
         raise credentials_exception
     return user
 
