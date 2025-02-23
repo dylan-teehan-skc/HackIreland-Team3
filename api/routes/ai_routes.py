@@ -57,6 +57,7 @@ async def generate_subscription_info(request: SubscriptionRequest):
                 ]
             }
             '''
+            "Have your descriptions be suggestive as why it may be better - why it may be worth it to cancel. - is this one cheaper etc.."
             "Ensure the response is **only valid JSON** with no additional text, explanations, or markdown formatting. "
             "Do not include introductory phrases or any content outside the JSON block."
             "Do not guess the cancellation link, actually do research and find the cancellation link."
