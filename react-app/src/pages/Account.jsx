@@ -10,7 +10,6 @@ const Account = () => {
     const fetchData = async () => {
       const token = localStorage.getItem("access_token");
       
-      // Fetch user details
       try {
         const userResponse = await fetch("http://localhost:8000/auth/me", {
           headers: {
@@ -28,7 +27,6 @@ const Account = () => {
         setError(err.message || "An error occurred. Please try again.");
       }
 
-      // Check if user has a card
       try {
         const cardResponse = await fetch("http://localhost:8000/real-cards/has-card", {
           headers: {

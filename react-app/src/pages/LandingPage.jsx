@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import Placeholder from "../images/Stripe-1.jpeg"
 
 const LandingPage = () => {
   return (
@@ -31,6 +32,86 @@ const LandingPage = () => {
             <span className="relative z-10">Manage Subscriptions</span>
             <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg opacity-0 hover:opacity-10 transition-opacity duration-300"></span>
           </Link>
+        </div>
+      </div>
+
+      <div className="w-full max-w-6xl mt-20 space-y-16">
+        <div className="relative p-8 bg-gray-800 rounded-lg shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-10 rounded-lg -z-10"></div>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+                Track All Your Subscriptions
+              </h2>
+              <p className="text-lg text-gray-300">
+                Keep track of all your subscriptions in one place. Get reminders
+                before payments are due and never miss a payment again.
+              </p>
+            </div>
+            <div className="flex-1">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-1 rounded-lg">
+                <div className="bg-gray-900 p-6 rounded-lg">
+                  <img
+                    src={Placeholder}
+                    alt="Subscription Tracking"
+                    className="rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative p-8 bg-gray-800 rounded-lg shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-10 rounded-lg -z-10"></div>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1 order-2 md:order-1">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-1 rounded-lg">
+                <div className="bg-gray-900 p-6 rounded-lg">
+                  <img
+                    src={Placeholder}
+                    alt="Split Expenses"
+                    className="rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 order-1 md:order-2">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+                Split Expenses with Ease
+              </h2>
+              <p className="text-lg text-gray-300">
+                Share subscription costs with friends or family. SubClub makes it
+                easy to split payments and manage shared expenses.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative p-8 bg-gray-800 rounded-lg shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-10 rounded-lg -z-10"></div>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+                Insights & Analytics
+              </h2>
+              <p className="text-lg text-gray-300">
+                Get detailed insights into your spending habits. Understand where
+                your money is going and optimize your subscriptions.
+              </p>
+            </div>
+            <div className="flex-1">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-1 rounded-lg">
+                <div className="bg-gray-900 p-6 rounded-lg">
+                  <img
+                    src={Placeholder}
+                    alt="Insights & Analytics"
+                    className="rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
