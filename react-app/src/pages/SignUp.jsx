@@ -48,6 +48,8 @@ const SignUp = () => {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
         throw new Error("Sign up failed. Please try again.");
       }
 
@@ -55,6 +57,7 @@ const SignUp = () => {
       localStorage.setItem("access_token", data.access_token);
       navigate("/dashboard");
     } catch (err) {
+      console.error("Fetch error:", err);
       setError(err.message || "An error occurred. Please try again.");
     }
   };

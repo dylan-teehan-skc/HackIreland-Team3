@@ -10,9 +10,10 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    console.log("Login attempt for username:", username);
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/token", {
+      const response = await fetch("http://localhost:8000/auth/token", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -24,13 +25,17 @@ const Login = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Login failed. Please try again.");
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error("Login failed. Please check your credentials.");
       }
 
       const data = await response.json();
-      localStorage.setItem("access_token", data.access_token); // Store token
-      navigate("/dashboard"); // Redirect to dashboard
+      console.log("Login successful for username:", username);
+      localStorage.setItem("access_token", data.access_token);
+      navigate("/dashboard");
     } catch (err) {
+      console.error("Fetch error:", err);
       setError(err.message || "An error occurred. Please try again.");
     }
   };

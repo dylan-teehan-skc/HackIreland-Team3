@@ -86,47 +86,37 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     elif event.type == "issuing_authorization.created":
         authorization = event.data.object
-        # Handle virtual card transaction authorization
-        print(f"Processing authorization for card: {authorization.card.id}")
-        # TODO: Implement your business logic here
-        # For example:
-        # - Log the transaction
-        # - Update transaction records
-        # - Send notifications
-
-    elif event.type == "issuing_transaction.created":
-        transaction = event.data.object
-        logger.info(f"Processing transaction: {transaction.id}")
+        logger.info(f"Processing authorization for card: {authorization.card.id}")
         
         try:
-            # Get the virtual card ID from the transaction
-            virtual_card_id = transaction.card
-            
-            # Find the virtual card in our database
-            virtual_card = db.query(VirtualCard).filter(VirtualCard.virtual_card_id == virtual_card_id).first()
+            # Get the virtual card associated with this authorization
+            virtual_card = db.query(VirtualCard).filter(VirtualCard.virtual_card_id == authorization.card.id).first()
             if not virtual_card:
-                logger.error(f"Virtual card {virtual_card_id} not found in database")
+                logger.error(f"No virtual card found for stripe card {authorization.card.id}")
                 raise HTTPException(status_code=404, detail="Virtual card not found")
             
-            # Get the group associated with the virtual card
-            group = virtual_card.group
+            # Get the group associated with this virtual card
+            group = db.query(Group).filter(Group.id == virtual_card.group_id).first()
             if not group:
-                logger.error(f"No group found for virtual card {virtual_card_id}")
+                logger.error(f"No group found for virtual card {virtual_card.id}")
                 raise HTTPException(status_code=404, detail="Group not found")
             
-            # Get all users in the group through the virtual card's card_members
-            group_members = [member.user for member in virtual_card.card_members]
+            # Get all group members with real cards
+            group_members = db.query(User).join(CardMember).filter(
+                CardMember.card_id == virtual_card.id,  # Join through card_id
+                User.real_card_id.isnot(None)
+            ).all()
             
             if not group_members:
                 logger.error(f"No group members with real cards found for group {group.id}")
                 raise HTTPException(status_code=400, detail="No group members with real cards found")
             
-            # Calculate split amount (handle both positive and negative amounts)
-            transaction_amount = abs(transaction.amount)  # Amount in smallest currency unit (cents)
-            split_amount = transaction_amount // len(group_members)  # Integer division
-            remainder = transaction_amount % len(group_members)  # Handle any remainder
+            # Calculate split amount
+            auth_amount = authorization.amount  # Amount in smallest currency unit (cents)
+            split_amount = auth_amount // len(group_members)  # Integer division
+            remainder = auth_amount % len(group_members)  # Handle any remainder
             
-            logger.info(f"Splitting transaction {transaction.id} amount {transaction_amount} among {len(group_members)} members")
+            logger.info(f"Splitting authorization {authorization.id} amount {auth_amount} among {len(group_members)} members")
             
             # Create payments to each member's real card
             for i, member in enumerate(group_members):
@@ -134,43 +124,109 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 payment_amount = split_amount + (remainder if i == 0 else 0)
                 
                 try:
-                    # First create a PaymentMethod with the card details
-                    payment_method = stripe.PaymentMethod.create(
-                        type='card',
-                        card={
-                            'number': member.real_card.card_number,
-                            'exp_month': int(member.real_card.expiry_date.split('/')[0]),
-                            'exp_year': int(member.real_card.expiry_date.split('/')[1]),
-                            'name': member.real_card.card_holder_name,
-                            'cvc': member.real_card.cvc
-                        }
-                    )
-                    print(payment_method)
-                    print(payment_method.id)
-
-                    # Create a PaymentIntent and attach the PaymentMethod
+                    # Get the customer's payment method ID from their real card
+                    if not member.real_card or not member.real_card.stripe_payment_method_id:
+                        logger.error(f"No valid payment method found for user {member.id}")
+                        raise HTTPException(status_code=400, detail=f"No valid payment method for user {member.id}")
+                    
+                    # Create a PaymentIntent with the specific payment method
                     payment_intent = stripe.PaymentIntent.create(
                         amount=payment_amount,  # amount in cents
-                        currency='eur',
-                        payment_method=payment_method.id,
+                        currency=authorization.currency,  # Use same currency as authorization
+                        customer=member.stripe_customer_id,
+                        payment_method=member.real_card.stripe_payment_method_id,
+                        payment_method_types=['card'],  # Explicitly only allow card payments
                         confirm=True,  # Confirm the payment immediately
-                        description=f'Split payment for transaction {transaction.id}',
+                        off_session=True,  # Indicate this is a background payment
+                        description=f'Split payment for authorization {authorization.id}',
                         metadata={
-                            'transaction_id': transaction.id,
+                            'authorization_id': authorization.id,
                             'user_id': member.id
                         }
                     )
                     
-                    logger.info(f"Successfully charged user {member.id} amount {payment_amount}")
+                    logger.info(f"Successfully charged user {member.id} amount {payment_amount} for authorization {authorization.id}")
+                except Exception as e:
+                    logger.error(f"Failed to create payment for user {member.id}: {str(e)}")
+                    raise HTTPException(status_code=400, detail=str(e))
+                    
+        except Exception as e:
+            logger.error(f"Error processing authorization {authorization.id}: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+    elif event.type == "issuing_transaction.created":
+        transaction = event.data.object
+        logger.info(f"Received transaction: {transaction.id}")
+        # Transaction event is now just for logging since we process payments at authorization time
+        
+        # # try:
+        # #     # Get the virtual card ID from the transaction
+        # #     virtual_card_id = transaction.card
+            
+        # #     # Find the virtual card in our database
+        # #     virtual_card = db.query(VirtualCard).filter(VirtualCard.virtual_card_id == virtual_card_id).first()
+        # #     if not virtual_card:
+        # #         logger.error(f"Virtual card {virtual_card_id} not found in database")
+        # #         raise HTTPException(status_code=404, detail="Virtual card not found")
+            
+        # #     # Get the group associated with the virtual card
+        # #     group = virtual_card.group
+        # #     if not group:
+        # #         logger.error(f"No group found for virtual card {virtual_card_id}")
+        # #         raise HTTPException(status_code=404, detail="Group not found")
+            
+        # #     # Get all users in the group through the virtual card's card_members
+        # #     group_members = [member.user for member in virtual_card.card_members]
+            
+        # #     if not group_members:
+        # #         logger.error(f"No group members with real cards found for group {group.id}")
+        # #         raise HTTPException(status_code=400, detail="No group members with real cards found")
+            
+        # #     # Calculate split amount (handle both positive and negative amounts)
+        # #     transaction_amount = abs(transaction.amount)  # Amount in smallest currency unit (cents)
+        # #     split_amount = transaction_amount // len(group_members)  # Integer division
+        # #     remainder = transaction_amount % len(group_members)  # Handle any remainder
+            
+        # #     logger.info(f"Splitting transaction {transaction.id} amount {transaction_amount} among {len(group_members)} members")
+            
+        # #     # Create payments to each member's real card
+        # #     for i, member in enumerate(group_members):
+        # #         # Add remainder to first member's payment to handle any rounding
+        # #         payment_amount = split_amount + (remainder if i == 0 else 0)
+                
+        # #         try:
+        # #             # Get the customer's payment method ID from their real card
+        # #             if not member.real_card or not member.real_card.stripe_payment_method_id:
+        # #                 logger.error(f"No valid payment method found for user {member.id}")
+        # #                 raise HTTPException(status_code=400, detail=f"No valid payment method for user {member.id}")
+                    
+        # #             # Create a PaymentIntent with the specific payment method
+        # #             payment_intent = stripe.PaymentIntent.create(
+        # #                 amount=payment_amount,  # amount in cents
+        # #                 currency='eur',
+        # #                 customer=member.stripe_customer_id,
+        # #                 payment_method=member.real_card.stripe_payment_method_id,
+        # #                 payment_method_types=['card'],  # Explicitly only allow card payments
+        # #                 confirm=True,  # Confirm the payment immediately
+        # #                 off_session=True,  # Indicate this is a background payment
+        # #                 description=f'Split payment for transaction {transaction.id}',
+        # #                 metadata={
+        # #                     'transaction_id': transaction.id,
+        # #                     'user_id': member.id
+        # #                 }
+        # #             )
+                    
+        # #             logger.info(f"Successfully charged user {member.id} amount {payment_amount}")
 
                     
-                except stripe.error.StripeError as e:
-                    logger.error(f"Failed to create payment for user {member.id}: {str(e)}")
-                    # Continue processing other payments even if one fails
-                    continue
+        # #         except stripe.error.StripeError as e:
+        # #             logger.error(f"Failed to create payment for user {member.id}: {str(e)}")
+        # #             # Continue processing other payments even if one fails
+        # #             continue
             
-        except Exception as e:
-            logger.error(f"Error processing transaction {transaction.id}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error processing transaction: {str(e)}")
+        # except Exception as e:
+        #     logger.error(f"Error processing transaction {transaction.id}: {str(e)}")
+        #     raise HTTPException(status_code=500, detail=f"Error processing transaction: {str(e)}")
+
     
     return {"status": "success"}

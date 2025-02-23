@@ -129,9 +129,18 @@ async def register_user(
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me", response_model=Dict[str, str])
+@router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return {
-        "name": current_user.name,
-        "email": current_user.email
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "middle_name": current_user.middle_name,
+        "date_of_birth": str(current_user.date_of_birth) if current_user.date_of_birth else None,
+        "address_line1": current_user.address_line1,
+        "city": current_user.city,
+        "state": current_user.state,
+        "postal_code": current_user.postal_code,
+        "country": current_user.country,
+        "phone_number": current_user.phone_number
     }

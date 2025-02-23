@@ -33,3 +33,4 @@ class User(Base):
     real_card = relationship("RealCard", back_populates="user", uselist=False)
     groups = relationship("Group", back_populates="admin")
     card_memberships = relationship("CardMember", back_populates="user")
+    subscriptions = relationship("Subscription", back_populates="user")
