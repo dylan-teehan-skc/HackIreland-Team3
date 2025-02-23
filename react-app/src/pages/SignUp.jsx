@@ -26,8 +26,8 @@ const SignUp = () => {
       }
 
       const data = await response.json();
-      localStorage.setItem("access_token", data.access_token); // Store token
-      navigate("/dashboard"); // Redirect to dashboard
+      localStorage.setItem("access_token", data.access_token);
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message || "An error occurred. Please try again.");
     }
