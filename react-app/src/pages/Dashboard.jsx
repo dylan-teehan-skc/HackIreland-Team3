@@ -1,12 +1,12 @@
 import React, { useEffect, useContext, useState } from "react";
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Pie } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Link, useNavigate } from "react-router-dom";
 import { FileContext } from "../context/FileContext";
 import { SubscriptionContext } from "../context/SubscriptionContext"; // Import the SubscriptionContext
 
 // Register the necessary components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const Dashboard = () => {
   const { subscriptions, setSubscriptions, totalSpent, setTotalSpent } = useContext(SubscriptionContext); // Use the SubscriptionContext
@@ -18,23 +18,6 @@ const Dashboard = () => {
 
   // Extract unique months from subscriptions
   const availableMonths = [...new Set(subscriptions.map(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' })))];
-
-  useEffect(() => {
-    // Retrieve data from local storage on component mount
-    const storedFileId = localStorage.getItem('fileId');
-    const storedSubscriptions = localStorage.getItem('subscriptions');
-    const storedTotalSpent = localStorage.getItem('totalSpent');
-
-    if (storedFileId) {
-      setFileId(storedFileId);
-    }
-    if (storedSubscriptions) {
-      setSubscriptions(JSON.parse(storedSubscriptions));
-    }
-    if (storedTotalSpent) {
-      setTotalSpent(parseFloat(storedTotalSpent));
-    }
-  }, [setFileId, setSubscriptions, setTotalSpent]);
 
   useEffect(() => {
     if (!fileId) return;
@@ -50,11 +33,6 @@ const Dashboard = () => {
 
         const total = data.reduce((sum, sub) => sum + sub.Amount, 0);
         setTotalSpent(total);
-
-        // Store data in local storage
-        localStorage.setItem('fileId', fileId);
-        localStorage.setItem('subscriptions', JSON.stringify(data));
-        localStorage.setItem('totalSpent', total.toString());
       } catch (error) {
         console.error("Error fetching subscriptions:", error);
       }
@@ -62,6 +40,67 @@ const Dashboard = () => {
 
     fetchSubscriptions();
   }, [fileId, setSubscriptions, setTotalSpent]);
+
+  const calculateProjectedExpenditure = () => {
+    const now = new Date();
+    const last30Days = new Date(now.setDate(now.getDate() - 30));
+
+    const previousSubscriptions = subscriptions.filter(sub => {
+      const subDate = new Date(sub.Date);
+      return subDate >= last30Days && subDate <= new Date();
+    });
+
+    return previousSubscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
+  };
+
+  const upcomingSubscriptions = subscriptions
+    .map(sub => {
+      const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
+      return { ...sub, daysAway };
+    })
+    .filter(sub => sub.daysAway >= 0 && sub.daysAway <= 30)
+    .filter((sub, index, self) => index === self.findIndex(s => s.Description === sub.Description));
+
+  const projectedExpenditure = upcomingSubscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
+
+  const sortedSubscriptions = upcomingSubscriptions.sort((a, b) => b.Amount - a.Amount);
+  const topSubscriptions = sortedSubscriptions.slice(0, 5);
+  const otherAmount = sortedSubscriptions.slice(5).reduce((sum, sub) => sum + sub.Amount, 0);
+
+  const pieChartData = {
+    labels: [...topSubscriptions.map(sub => sub.Description), ...(otherAmount > 0 ? ['Other'] : [])],
+    datasets: [
+      {
+        label: 'Expenses by Subscription',
+        data: [...topSubscriptions.map(sub => sub.Amount), ...(otherAmount > 0 ? [otherAmount] : [])],
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#9ACD32', '#FF6347', '#8A2BE2'],
+        hoverOffset: 4
+      }
+    ]
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const description = context.label;
+            const amount = context.raw;
+            return `${description}: $${amount.toFixed(2)}`;
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: 'Predicted Expenses by Subscription',
+        color: '#fff'
+      }
+    }
+  };
 
   const handleDelete = async (description, amount, date) => {
     try {
@@ -81,10 +120,6 @@ const Dashboard = () => {
       // Recalculate the total spent
       const newTotal = subscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
       setTotalSpent(newTotal);
-
-      // Update local storage
-      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
-      localStorage.setItem('totalSpent', newTotal.toString());
     } catch (error) {
       console.error("Error deleting subscription:", error);
     }
@@ -98,7 +133,6 @@ const Dashboard = () => {
     formData.append('file', file);
 
     try {
-      // Upload the file
       const response = await fetch('http://127.0.0.1:8000/files/upload', {
         method: 'POST',
         body: formData,
@@ -110,31 +144,8 @@ const Dashboard = () => {
 
       const data = await response.json();
       setFileId(data.file_id); // Update the file ID, triggering the useEffect to fetch data
-
-      // Fetch subscriptions from the uploaded file
-      const subscriptionsResponse = await fetch(`http://127.0.0.1:8000/subscriptions/from-file/${data.file_id}`);
-      if (!subscriptionsResponse.ok) {
-        throw new Error(`HTTP error! status: ${subscriptionsResponse.status}`);
-      }
-      const subscriptionsData = await subscriptionsResponse.json();
-
-      // Send subscriptions to the backend to save them
-      const saveResponse = await fetch('http://127.0.0.1:8000/subscriptions/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`, // Include the user's token
-        },
-        body: JSON.stringify(subscriptionsData),
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error(`HTTP error! status: ${saveResponse.status}`);
-      }
-
-      console.log("Subscriptions saved successfully");
     } catch (error) {
-      console.error("Error uploading file or saving subscriptions:", error);
+      console.error("Error uploading file:", error);
     }
   };
 
@@ -271,6 +282,7 @@ const Dashboard = () => {
   };
 
   // Calculate upcoming subscriptions
+  /*
   const upcomingSubscriptions = subscriptions
     .map(sub => {
       const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
@@ -284,20 +296,7 @@ const Dashboard = () => {
     .sort((a, b) => a.daysAway - b.daysAway);
 
   // Sort subscriptions by date in descending order
-  const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date));
-
-  // Function to clear the fileId and related data
-  const handleClearData = () => {
-    setFileId(null); // Clear the fileId
-    setSubscriptions([]); // Clear subscriptions
-    setTotalSpent(0); // Reset total spent
-    document.getElementById('file-upload').value = ''; // Reset file input
-
-    // Clear local storage
-    localStorage.removeItem('fileId');
-    localStorage.removeItem('subscriptions');
-    localStorage.removeItem('totalSpent');
-  };
+  const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date)); */
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -307,35 +306,25 @@ const Dashboard = () => {
           Your Subscriptions
         </h1>
 
-        <div className="flex items-center space-x-4">
-          {/* Clear Data Button */}
-          <button
-            onClick={handleClearData}
-            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200"
+        {/* File Upload */}
+        <div className="relative">
+          <input 
+            type="file" 
+            onChange={handleFileUpload} 
+            className="hidden" 
+            id="file-upload" 
+          />
+          <label 
+            htmlFor="file-upload" 
+            className="cursor-pointer bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
+            text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 
+            flex items-center space-x-2"
           >
-            Clear
-          </button>
-
-          {/* File Upload */}
-          <div className="relative">
-            <input 
-              type="file" 
-              onChange={handleFileUpload} 
-              className="hidden" 
-              id="file-upload" 
-            />
-            <label 
-              htmlFor="file-upload" 
-              className="cursor-pointer bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
-              text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 
-              flex items-center space-x-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Upload Statement</span>
-            </label>
-          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Upload Statement</span>
+          </label>
         </div>
       </div>
 
@@ -420,17 +409,34 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Upcoming Subscriptions Section */}
-      <div className="mt-8 bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-semibold text-gray-300 mb-6">Upcoming Subscriptions</h2>
-        <ul>
-          {upcomingSubscriptions.map((sub, index) => (
-            <li key={index} className="mb-4">
-              <p className="text-lg text-purple-400">{sub.Description}</p>
-              <p className="text-gray-300">Next Payment: {sub.Estimated_Next} ({sub.daysAway} days away)</p>
-            </li>
-          ))}
-        </ul>
+      {/* Upcoming Subscriptions and Projected Expenditure Section */}
+      <div className="mt-8 flex flex-col lg:flex-row gap-8">
+        {/* Upcoming Subscriptions Section */}
+        <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-semibold text-gray-300 mb-6">Upcoming Subscriptions</h2>
+          <ul>
+            {upcomingSubscriptions.map((sub, index) => (
+              <li key={index} className="mb-4">
+                <p className="text-lg text-purple-400">{sub.Description}</p>
+                <p className="text-gray-300">Next Payment: {sub.Estimated_Next} ({sub.daysAway} days away)</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Projected Expenditure Section */}
+        <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-semibold text-gray-300 mb-6">Projected Expenditure Next Month</h2>
+          <p className="text-lg text-gray-300">
+            Based on the last 30 days, your projected expenditure for next month is:
+          </p>
+          <p className="text-3xl font-bold text-purple-400 mt-4">
+            ${projectedExpenditure.toFixed(2)}
+          </p>
+          <div style={{ height: '300px', marginTop: '20px' }}>
+            <Pie data={pieChartData} options={pieChartOptions} />
+          </div>
+        </div>
       </div>
     </div>
   );
