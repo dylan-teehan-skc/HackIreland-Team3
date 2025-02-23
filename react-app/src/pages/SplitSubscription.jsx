@@ -11,7 +11,6 @@ const SplitSubscription = () => {
   const [splitRatios, setSplitRatios] = useState({});
   const navigate = useNavigate();
 
-  // Fetch existing split subscriptions (placeholder API)
   useEffect(() => {
     const fetchSplitSubscriptions = async () => {
       try {
@@ -30,7 +29,6 @@ const SplitSubscription = () => {
     fetchSplitSubscriptions();
   }, []);
 
-  // Handle creating a group (virtual card)
   const handleCreateGroup = async () => {
     try {
       const response = await fetch("/api/groups", {
@@ -56,7 +54,6 @@ const SplitSubscription = () => {
     }
   };
 
-  // Handle adding a shared subscription
   const handleAddSubscription = async () => {
     try {
       const response = await fetch("/api/subscriptions", {
@@ -88,8 +85,6 @@ const SplitSubscription = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <h1 className="text-4xl font-bold mb-8">Split Subscriptions</h1>
-
-      {/* Table of Existing Split Subscriptions */}
       <div className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">Your Split Subscriptions</h2>
         <table className="w-full bg-gray-800 rounded-lg overflow-hidden">
@@ -118,7 +113,6 @@ const SplitSubscription = () => {
         </table>
       </div>
 
-      {/* Create Group Button */}
       <button
         onClick={() => setShowCreateGroupModal(true)}
         className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
@@ -126,7 +120,6 @@ const SplitSubscription = () => {
         Create Group
       </button>
 
-      {/* Create Group Modal */}
       {showCreateGroupModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
@@ -174,7 +167,6 @@ const SplitSubscription = () => {
         </div>
       )}
 
-      {/* Add Shared Subscription */}
       {selectedSubscription && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
@@ -200,6 +192,12 @@ const SplitSubscription = () => {
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
             >
               Confirm
+            </button>
+            <button
+              onClick={handleAddSubscription}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
+            >
+              Return
             </button>
             <button
               onClick={() => setSelectedSubscription(null)}
