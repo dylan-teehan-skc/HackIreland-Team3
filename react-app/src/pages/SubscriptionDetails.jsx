@@ -128,6 +128,12 @@ const SubscriptionDetails = () => {
       return;
     }
 
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('No access token found');
+      return;
+    }
+
     console.log('Attempting to add subscription to group:', { selectedGroup, subscriptionDetails });
 
     try {
@@ -135,12 +141,16 @@ const SubscriptionDetails = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ group_id: selectedGroup }),
+        body: JSON.stringify({
+          group_id: parseInt(selectedGroup) // Ensure group_id is sent as a number
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(`HTTP error! status: ${response.status}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
       }
 
       const result = await response.json();
@@ -149,7 +159,8 @@ const SubscriptionDetails = () => {
       alert('Successfully added subscription to group!');
     } catch (error) {
       console.error('Error adding subscription to group:', error);
-      alert('Failed to add subscription to group. Please try again.');
+      // Show error message
+      alert(`Failed to add subscription to group: ${error.message}`);
     }
   };
 
