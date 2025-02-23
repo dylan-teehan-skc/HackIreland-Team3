@@ -7,14 +7,21 @@ subscription manager
 Inspiration:
 We were inspired to build this tool by the following problems:
 => Difficulty in splitting subscription costs
+=> Difficult to remember upcoming subscription costs
 => Difficulty in tracking and analysing outgoings towards subscriptions
 => Difficulty in ensuring you are getting the best/cheapest alternative for a certain software
 
 (What it does) Our platform achieves:
-=> Virtual card creation to help groups split subscriptions costs in a few clicks
-=> Helps the user analyse their current expenditure accross their subscriprions
-=> Get reminders for upcoming billing 
+Overview: A clear dashboard shows all your subscriptions, costs, and upcoming due dates.
+=> Virtual card creation to allow flexible sharing: 
+Customize how expenses are divided among friends, family, or colleagues.
+=> Helps the user analyse their current expenditure accross their subscriprions:
+This solution is designed to simplify your life by keeping your recurring payments organized and making it easier to share expenses, saving you both time and money.
+
+=> Timely Reminders: Automated alerts ensure you never miss a payment.
 => See alternatiev subscriptions that would allow the user to save money
+
+Secure & Reliable: Enjoy a smooth and safe experience every time you log in.
 
 
 (How you built it):
@@ -29,27 +36,6 @@ Accomplishments that you’re proud of:
 What you learned:
 
 Future work:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 Description:
