@@ -3,20 +3,18 @@ import { Bar, Pie } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Link, useNavigate } from "react-router-dom";
 import { FileContext } from "../context/FileContext";
-import { SubscriptionContext } from "../context/SubscriptionContext"; // Import the SubscriptionContext
+import { SubscriptionContext } from "../context/SubscriptionContext";
 
-// Register the necessary components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const Dashboard = () => {
-  const { subscriptions, setSubscriptions, totalSpent, setTotalSpent } = useContext(SubscriptionContext); // Use the SubscriptionContext
+  const { subscriptions, setSubscriptions, totalSpent, setTotalSpent } = useContext(SubscriptionContext);
   const { fileId, setFileId } = useContext(FileContext);
   const navigate = useNavigate();
 
-  const [timeRange, setTimeRange] = useState('Monthly'); // State to manage time range selection
-  const [selectedMonth, setSelectedMonth] = useState(''); // State to manage selected month
+  const [timeRange, setTimeRange] = useState('Monthly');
+  const [selectedMonth, setSelectedMonth] = useState('');
 
-  // Extract unique months from subscriptions
   const availableMonths = [...new Set(subscriptions.map(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' })))];
 
   useEffect(() => {
@@ -41,7 +39,6 @@ const Dashboard = () => {
     fetchSubscriptions();
   }, [fileId, setSubscriptions, setTotalSpent]);
 
-  // Calculate projected expenditure for the next month
   const calculateProjectedExpenditure = () => {
     const now = new Date();
     const last30Days = new Date(now.setDate(now.getDate() - 30));
@@ -59,26 +56,21 @@ const Dashboard = () => {
   const subscriptionMap = new Map();
 
   subscriptions.forEach(sub => {
-    // Calculate the monthly cost for the subscription
     let monthlyCost = sub.Amount;
 
-    // If the subscription has a frequency, adjust the cost accordingly
     if (sub.Frequency === "Yearly") {
-      monthlyCost = sub.Amount / 12; // Convert yearly cost to monthly
+      monthlyCost = sub.Amount / 12;
     } else if (sub.Frequency === "Weekly") {
-      monthlyCost = sub.Amount * 4; // Convert weekly cost to monthly (assuming 4 weeks in a month)
+      monthlyCost = sub.Amount * 4;
     }
 
     if (subscriptionMap.has(sub.Description)) {
-      // If the subscription name already exists, add the monthly cost to the existing total
       subscriptionMap.set(sub.Description, subscriptionMap.get(sub.Description) + monthlyCost);
     } else {
-      // If the subscription name is new, add it to the map
       subscriptionMap.set(sub.Description, monthlyCost);
     }
   });
 
-  // Convert the map to arrays for the pie chart
   const uniqueSubscriptionNames = Array.from(subscriptionMap.keys());
   const monthlyCosts = Array.from(subscriptionMap.values());
 
@@ -93,18 +85,17 @@ const Dashboard = () => {
     ]
   };
 
-  // Pie chart options (disable legend)
   const pieChartOptions = {
     plugins: {
       legend: {
-        display: false, // Disable the legend
+        display: false, 
       },
       tooltip: {
         callbacks: {
           label: function(context) {
             const label = context.label || '';
             const value = context.raw || 0;
-            return `${label}: $${value.toFixed(2)}`; // Show label and value in tooltip
+            return `${label}: $${value.toFixed(2)}`; 
           }
         }
       }
@@ -121,12 +112,10 @@ const Dashboard = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Remove the subscription from the state
       setSubscriptions((prevSubscriptions) =>
         prevSubscriptions.filter((sub) => !(sub.Description === description && sub.Amount === amount && sub.Date === date))
       );
 
-      // Recalculate the total spent
       const newTotal = subscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
       setTotalSpent(newTotal);
     } catch (error) {
@@ -152,7 +141,7 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-      setFileId(data.file_id); // Update the file ID, triggering the useEffect to fetch data
+      setFileId(data.file_id); 
     } catch (error) {
       console.error("Error uploading file:", error);
     }
@@ -177,7 +166,7 @@ const Dashboard = () => {
     setTotalSpent(0);
     setFileId(null);
     setSelectedMonth('');
-    document.getElementById('file-upload').value = ''; // Reset file input
+    document.getElementById('file-upload').value = ''; 
   };
 
   const handleDescriptionClick = async (description, amount, dates) => {
@@ -209,30 +198,25 @@ const Dashboard = () => {
       const data = await response.json();
       console.log("API Response Data:", data);
 
-      // Fetch previous dates
       const previousDates = await fetchPreviousDates(description, amount);
 
-      // Navigate with the generated info and previous dates
       navigate(`/subscription/${fileId}/${encodeURIComponent(description)}/${amount}`, { state: { generatedInfo: data, previousDates } });
     } catch (error) {
       console.error("Error generating subscription info:", error);
     }
   };
 
-  // Function to handle time range change
   const handleTimeRangeChange = (event) => {
     setTimeRange(event.target.value);
     if (event.target.value !== 'Monthly') {
-      setSelectedMonth(''); // Reset month selection if not monthly
+      setSelectedMonth(''); 
     }
   };
 
-  // Function to handle month change
   const handleMonthChange = (event) => {
     setSelectedMonth(event.target.value);
   };
 
-  // Prepare data for the chart based on the selected time range and month
   const filteredSubscriptions = timeRange === 'Monthly' && selectedMonth
     ? subscriptions.filter(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' }) === selectedMonth)
     : subscriptions;
@@ -251,7 +235,6 @@ const Dashboard = () => {
     ],
   };
 
-  // Update the chart options based on the time range
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -298,31 +281,26 @@ const Dashboard = () => {
     },
   };
 
-  // Calculate upcoming subscriptions
   const upcomingSubscriptions = subscriptions
     .map(sub => {
       const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
       return { ...sub, daysAway };
     })
     .filter(sub => sub.daysAway >= 0)
-    // Filter out duplicates based on Description
     .filter((sub, index, self) => 
       index === self.findIndex((s) => s.Description === sub.Description)
     )
     .sort((a, b) => a.daysAway - b.daysAway);
 
-  // Sort subscriptions by date in descending order
   const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="flex justify-between items-center mb-8">
-        {/* Title */}
         <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent leading-tight">
           Your Subscriptions
         </h1>
 
-        {/* File Upload */}
         <div className="relative flex space-x-4 items-center">
           <button
             onClick={handleClearData}
@@ -350,12 +328,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Content Container */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Table Section */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-300 mb-6">Subscription Details</h2>
-          <div className="overflow-y-auto" style={{ maxHeight: '500px' }}> {/* Fixed height and scrollable */}
+          <div className="overflow-y-auto" style={{ maxHeight: '500px' }}>
             <table className="min-w-full">
               <thead>
                 <tr>
@@ -386,12 +362,10 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Chart Section */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-gray-300">{timeRange} Spending</h2>
             <div className="flex space-x-4">
-              {/* Time Range Dropdown */}
               <select
                 value={timeRange}
                 onChange={handleTimeRangeChange}
@@ -401,7 +375,6 @@ const Dashboard = () => {
                 <option value="Yearly">Yearly</option>
               </select>
 
-              {/* Month Selector (only show if Monthly is selected) */}
               {timeRange === 'Monthly' && (
                 <select
                   value={selectedMonth}
@@ -416,15 +389,13 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          <div style={{ height: '500px' }}> {/* Fixed height for the chart */}
+          <div style={{ height: '500px' }}>
             <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
       </div>
 
-      {/* Upcoming Subscriptions and Projected Expenditure Section */}
       <div className="mt-8 flex flex-col lg:flex-row gap-8">
-        {/* Upcoming Subscriptions Section */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-300 mb-6">Upcoming Subscriptions</h2>
           <ul>
@@ -437,7 +408,6 @@ const Dashboard = () => {
           </ul>
         </div>
 
-        {/* Projected Expenditure Section */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-300 mb-6">Projected Expenditure Next Month</h2>
           <p className="text-lg text-gray-300">
