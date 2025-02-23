@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FileContext } from "../context/FileContext"; // Import the FileContext
 
 // Register the necessary components
@@ -11,6 +11,7 @@ const Dashboard = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const { fileId, setFileId } = useContext(FileContext); // Use the FileContext
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!fileId) return; // Do nothing if fileId is not set
@@ -78,6 +79,42 @@ const Dashboard = () => {
       setFileId(data.file_id); // Update the file ID, triggering the useEffect to fetch data
     } catch (error) {
       console.error("Error uploading file:", error);
+    }
+  };
+
+  const handleDescriptionClick = async (description, amount, dates) => {
+    console.log("Description:", description);
+    console.log("Amount:", amount);
+    console.log("Dates:", dates);
+
+    const formattedDates = dates ? dates.map(date => new Date(date).toISOString().split('T')[0]) : [];
+
+    const requestBody = { description, price: amount, dates: formattedDates };
+    console.log("Request Body:", requestBody);
+
+    try {
+        const response = await fetch("http://127.0.0.1:8000/generate-subscription-info", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error("Error response text:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response Data:", data);
+
+        // Navigate with the generated info
+        navigate(`/subscription/${fileId}/${encodeURIComponent(description)}/${amount}`, { state: { generatedInfo: data } });
+    } catch (error) {
+        console.error("Error generating subscription info:", error);
     }
   };
 
@@ -163,9 +200,9 @@ const Dashboard = () => {
                 {subscriptions.map((sub) => (
                   <tr key={`${sub.Description}-${sub.Amount}-${sub.Date}`} className="border-b border-gray-700 hover:bg-gray-750 transition-colors duration-200">
                     <td className="py-4 px-6 text-sm font-medium text-gray-300">
-                      <Link to={`/subscription/${fileId}/${encodeURIComponent(sub.Description)}/${sub.Amount}`}>
+                      <button onClick={() => handleDescriptionClick(sub.Description, sub.Amount, sub.Dates)}>
                         {sub.Description}
-                      </Link>
+                      </button>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-300">${sub.Amount.toFixed(2)}</td>
                     <td className="py-4 px-6 text-sm text-gray-300">{sub.Date}</td>
