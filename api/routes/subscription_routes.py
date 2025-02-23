@@ -7,6 +7,7 @@ from api.auth import get_current_active_user
 from api.models.subscription import Subscription
 from api.models.user import User
 from api.models.uploaded_file import UploadedFile
+from api.models import Group
 import logging
 import os
 import json
@@ -297,4 +298,18 @@ async def create_subscriptions(subscriptions: List[dict], db: Session = Depends(
     except Exception as e:
         db.rollback()
         logger.error(f"Error saving subscriptions: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/subscriptions/{subscription_id}/add-to-group")
+async def add_subscription_to_group(subscription_id: int, group_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    subscription = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    subscription.group_id = group_id
+    db.commit()
+    return {"message": "Subscription added to group successfully"} 

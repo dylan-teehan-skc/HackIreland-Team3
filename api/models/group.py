@@ -10,4 +10,5 @@ class Group(Base):
     admin_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
     admin = relationship("User", back_populates="groups")
-    virtual_card = relationship("VirtualCard", uselist=False, back_populates="group") 
+    virtual_card = relationship("VirtualCard", uselist=False, back_populates="group")
+    subscriptions = relationship("Subscription", back_populates="group") 
