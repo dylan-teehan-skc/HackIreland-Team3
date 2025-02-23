@@ -202,7 +202,7 @@ const SubscriptionDetails = () => {
             </button>
           </div>
           {cancellation_link && (
-            <a href={cancellation_link} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50">
+            <a href={cancellation_link} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 hover:bg-purple-700">
               Cancel Subscription
             </a>
           )}
