@@ -1,13 +1,55 @@
 # Team-3
-
+# SUBHUB
 
 Plan:
-subscription manager:
+subscription manager
 
-=> Dashboard of all subs & spending => Data Analysis
+Inspiration:
+We were inspired to build this tool by the following problems:
+=> Difficulty in splitting subscription costs
+=> Difficulty in tracking and analysing outgoings towards subscriptions
+=> Difficulty in ensuring you are getting the best/cheapest alternative for a certain software
+
+(What it does) Our platform achieves:
+=> Virtual card creation to help groups split subscriptions costs in a few clicks
+=> Helps the user analyse their current expenditure accross their subscriprions
+=> Get reminders for upcoming billing 
+=> See alternatiev subscriptions that would allow the user to save money
 
 
-=> virtual cards and splitting subscriptions.
+(How you built it):
+We are using a flask backend with a react front end.
+
+Challenges faced:
+... tailwind
+
+
+Accomplishments that you’re proud of:
+
+What you learned:
+
+Future work:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Description:
