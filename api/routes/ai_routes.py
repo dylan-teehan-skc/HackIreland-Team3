@@ -6,13 +6,10 @@ from dotenv import load_dotenv
 import json
 from typing import Optional, List
 
-# Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
-# Get API key from environment variable
-print(os.getenv("OPENAI_API_KEY"))
-openai.api_key = ""
-print(openai.api_key)
+# Debug print
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Initialize API Router
 router = APIRouter()
@@ -62,7 +59,7 @@ async def generate_subscription_info(request: SubscriptionRequest):
             '''
             "Ensure the response is **only valid JSON** with no additional text, explanations, or markdown formatting. "
             "Do not include introductory phrases or any content outside the JSON block."
-            "Use reason in your answers - maybe start with 'you should use this over x because...' or 'this is better than y because...'"
+            "Do not guess the cancellation link, actually do research and find the cancellation link."
         )"""
 
         # Call the OpenAI API using the chat completion method
@@ -73,7 +70,8 @@ async def generate_subscription_info(request: SubscriptionRequest):
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
-            temperature=0.3  # Lower temperature to make responses more deterministic
+            temperature=0.3,  # Lower temperature to make responses more deterministic
+            api_key=OPENAI_API_KEY
         )
 
         # Log the AI response
