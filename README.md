@@ -22,10 +22,6 @@ This solution is designed to simplify your life by keeping your recurring paymen
 
 Secure & Reliable: Enjoy a smooth and safe experience every time you log in.
 
-
-(How you built it):
-We are using a flask backend with a react front end.
-
 Description:
 
 Our application is a user-friendly online tool that makes managing your recurring expenses simple and stress-free. It lets you see all your subscriptions—like streaming services, gym memberships, or software licenses—in one organized place. You'll always know when payments are due, how much each costs, and you'll receive friendly reminders before renewals.
