@@ -17,7 +17,7 @@ from .models import User
 # JWT Configuration
 SECRET_KEY = "your-secret-key-keep-it-secret"  # In production, move this to environment variables
 ALGORITHM = "HS256"  # HMAC with SHA-256 hash algorithm
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiration time in minutes
+ACCESS_TOKEN_EXPIRE_MINUTES = 3000  # Token expiration time in minutes
 
 # Password hashing configuration using bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
