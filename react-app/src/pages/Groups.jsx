@@ -364,25 +364,115 @@ const Groups = () => {
               {/* Members and Ratios */}
               {selectedGroupMembers && (
                 <div>
-                  <h4 className="text-lg font-semibold mb-3 text-purple-400">Members & Ratios</h4>
-                  <div className="space-y-2">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-lg font-semibold text-purple-400">Members & Ratios</h4>
+                    {groups.find(g => g.id === selectedGroupId)?.is_admin && (
+                      <div className="flex space-x-2">
+                        {isEditingRatios ? (
+                          <>
+                            <button
+                              onClick={() => updateGroupRatios(selectedGroupId)}
+                              className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded"
+                            >
+                              Save Ratios
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsEditingRatios(false);
+                                fetchGroupRatios(selectedGroupId);
+                              }}
+                              className="px-3 py-1 text-sm bg-gray-600 hover:bg-gray-700 rounded"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setIsEditingRatios(true)}
+                            className="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 rounded"
+                          >
+                            Edit Ratios
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
                     {selectedGroupMembers.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-3 rounded bg-gray-800">
-                        <div>
-                          <p className="font-medium">{member.username}</p>
-                          <p className="text-sm text-gray-400">{member.first_name} {member.last_name}</p>
+                      <div key={member.id} className="p-4 rounded bg-gray-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-medium">{member.username}</p>
+                            <p className="text-sm text-gray-400">{member.first_name} {member.last_name}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2 py-1 text-xs rounded bg-gray-600">
+                              {member.is_admin ? 'Admin' : 'Member'}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                          <span className="px-3 py-1 text-sm rounded bg-purple-600">
-                            {memberRatios[member.id] || 0}%
-                          </span>
-                          <span className="px-2 py-1 text-xs rounded bg-gray-600">
-                            {member.is_admin ? 'Admin' : 'Member'}
-                          </span>
+                          {isEditingRatios ? (
+                            <div className="flex-1 flex items-center space-x-4">
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={memberRatios[member.id] || 0}
+                                onChange={(e) => {
+                                  const newRatios = { ...memberRatios };
+                                  newRatios[member.id] = parseFloat(e.target.value);
+                                  setMemberRatios(newRatios);
+                                }}
+                                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                              />
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={memberRatios[member.id] || 0}
+                                onChange={(e) => {
+                                  const newRatios = { ...memberRatios };
+                                  newRatios[member.id] = parseFloat(e.target.value);
+                                  setMemberRatios(newRatios);
+                                }}
+                                className="w-20 px-2 py-1 text-sm rounded bg-gray-700 text-white"
+                              />
+                              <span className="text-sm text-gray-400">%</span>
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex items-center space-x-4">
+                              <div className="flex-1 h-2 bg-gray-700 rounded-lg overflow-hidden">
+                                <div 
+                                  className="h-full bg-purple-600" 
+                                  style={{ width: `${memberRatios[member.id] || 0}%` }}
+                                />
+                              </div>
+                              <span className="px-3 py-1 text-sm rounded bg-purple-600 min-w-[60px] text-center">
+                                {memberRatios[member.id] || 0}%
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
+                  {isEditingRatios && (
+                    <div className="mt-4 p-3 bg-gray-800 rounded">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Total:</span>
+                        <span className={`font-medium ${
+                          Object.values(memberRatios).reduce((a, b) => a + parseFloat(b || 0), 0) === 100 
+                          ? 'text-green-400' 
+                          : 'text-red-400'
+                        }`}>
+                          {Object.values(memberRatios).reduce((a, b) => a + parseFloat(b || 0), 0)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

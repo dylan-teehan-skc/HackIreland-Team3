@@ -4,7 +4,7 @@ from api.config.settings import get_settings
 import stripe
 from api.database import get_db
 from sqlalchemy.orm import Session
-from api.models import User, Group, VirtualCard, CardMember, RealCard
+from api.models import User, Group, VirtualCard, CardMember, RealCard, GroupMemberRatio
 import json
 import logging
 
@@ -111,17 +111,43 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 logger.error(f"No group members with real cards found for group {group.id}")
                 raise HTTPException(status_code=400, detail="No group members with real cards found")
             
-            # Calculate split amount
-            auth_amount = authorization.amount  # Amount in smallest currency unit (cents)
-            split_amount = auth_amount // len(group_members)  # Integer division
-            remainder = auth_amount % len(group_members)  # Handle any remainder
+            # Get the group ratios
+            group_ratios = db.query(GroupMemberRatio).filter(
+                GroupMemberRatio.group_id == group.id
+            ).all()
             
-            logger.info(f"Splitting authorization {authorization.id} amount {auth_amount} among {len(group_members)} members")
+            # If no ratios exist, calculate equal split
+            if not group_ratios:
+                split_percentage = 100.0 / len(group_members)
+                group_ratios = [
+                    GroupMemberRatio(
+                        group_id=group.id,
+                        user_id=member.id,
+                        ratio_percentage=split_percentage
+                    ) for member in group_members
+                ]
+                
+            # Calculate payments based on ratios
+            auth_amount = authorization.amount  # Amount in smallest currency unit (cents)
+            remainder = auth_amount  # Keep track of remaining amount to handle rounding
+            
+            logger.info(f"Splitting authorization {authorization.id} amount {auth_amount} according to group ratios")
             
             # Create payments to each member's real card
             for i, member in enumerate(group_members):
-                # Add remainder to first member's payment to handle any rounding
-                payment_amount = split_amount + (remainder if i == 0 else 0)
+                # Find the ratio for this member
+                member_ratio = next((ratio for ratio in group_ratios if ratio.user_id == member.id), None)
+                if not member_ratio:
+                    logger.error(f"No ratio found for member {member.id}")
+                    continue
+                
+                # Calculate payment amount based on ratio
+                if i == len(group_members) - 1:
+                    # Last member gets the remainder to avoid rounding issues
+                    payment_amount = remainder
+                else:
+                    payment_amount = int((auth_amount * member_ratio.ratio_percentage) / 100)
+                    remainder -= payment_amount
                 
                 try:
                     # Get the customer's payment method ID from their real card
