@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Account = () => {
-  const [userDetails, setUserDetails] = useState(null);
+  const [userDetails, setUserDetails] = useState({ username: '', email: '', first_name: '', last_name: '', middle_name: '', date_of_birth: '', address_line1: '', city: '', state: '', postal_code: '', country: '', phone_number: '', username: '' });
   const [error, setError] = useState("");
   const [hasCard, setHasCard] = useState(false);
   const navigate = useNavigate(); // Add this line
@@ -28,7 +28,7 @@ const Account = () => {
         }
 
         const userData = await userResponse.json();
-        setUserDetails(userData);
+        setUserDetails({ ...userData });
       } catch (err) {
         setError(err.message || "An error occurred. Please try again.");
       }
@@ -66,6 +66,9 @@ const Account = () => {
           Your Account
         </h1>
         <div className="space-y-4">
+          <p>
+            <strong>Username:</strong> {userDetails.username}
+          </p>
           <p>
             <strong>Email:</strong> {userDetails.email}
           </p>
