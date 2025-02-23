@@ -66,7 +66,7 @@ async def generate_subscription_info(request: SubscriptionRequest):
 
         # Call the OpenAI API using the chat completion method
         response = openai.ChatCompletion.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful AI that strictly outputs JSON."},
                 {"role": "user", "content": prompt}

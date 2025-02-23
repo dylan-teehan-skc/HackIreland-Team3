@@ -11,7 +11,7 @@ const LandingPage = () => {
           Take Control of Your Subscriptions
         </h1>
 
-        <p className="text-lg md:text-xl text-gray-300 mb-8">
+        <p className="text-lg md:text-xl text-gray-300 mb-12 leading-relaxed">
           SubClub helps you manage, track, and split recurring expenses with ease.
           Never miss a payment again!
         </p>

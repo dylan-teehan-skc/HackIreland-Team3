@@ -43,10 +43,11 @@ def find_subscriptions(df):
                 date_diffs = group["Date"].diff().dropna()
                 is_monthly = all(timedelta(days=25) <= diff <= timedelta(days=35) for diff in date_diffs)
                 if is_monthly:
-                    avg_time_between = date_diffs.mean()
                     last_date = group["Date"].iloc[-1]
-                    estimated_next_date = (last_date + avg_time_between).date().isoformat()
-                    formatted_dates = [d.date().isoformat() for d in group["Date"]]
+                    # Calculate the estimated next date by adding one month
+                    estimated_next_date = (last_date + pd.DateOffset(months=1)).strftime('%Y-%m-%d')
+                    logger.debug(f"Last date: {last_date}, Estimated next date: {estimated_next_date}")
+                    formatted_dates = [d.strftime('%Y-%m-%d') for d in group["Date"]]
                     subscriptions.append({
                         "Description": description,
                         "Amount": amount,

@@ -1,29 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { SubscriptionContext } from "../context/SubscriptionContext";
 import "../index.css";
 
 const SubscriptionDetails = () => {
   const { fileId, description, amount } = useParams();
   const location = useLocation();
+  const { subscriptions } = useContext(SubscriptionContext);
   const [subscriptionDetails, setSubscriptionDetails] = useState(null);
   const [totalSpent, setTotalSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSubscriptionDetails = async () => {
-      try {
-        const response = await fetch(`http://127.0.0.1:8000/subscriptions/filter/${fileId}?description=${encodeURIComponent(description)}&price=${amount}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setSubscriptionDetails(data[0]);
-      } catch (error) {
-        console.error("Error fetching subscription details:", error);
-      }
-    };
+    const subscription = subscriptions.find(sub => sub.Description === description && sub.Amount === parseFloat(amount));
+    if (subscription) {
+      setSubscriptionDetails(subscription);
+      setLoading(false);
+    }
+  }, [subscriptions, description, amount]);
 
+  useEffect(() => {
     const fetchTotalSpent = async () => {
       try {
         const response = await fetch(`http://127.0.0.1:8000/subscriptions/specific_spent/${fileId}?description=${encodeURIComponent(description)}&price=${amount}`);
@@ -37,7 +34,6 @@ const SubscriptionDetails = () => {
       }
     };
 
-    fetchSubscriptionDetails();
     fetchTotalSpent();
   }, [fileId, description, amount]);
 
@@ -54,7 +50,17 @@ const SubscriptionDetails = () => {
   const generatedInfo = location.state?.generatedInfo || {};
   const { cancellation_link, alternatives } = generatedInfo;
 
-  const sortedDates = [...subscriptionDetails.Dates].sort((a, b) => new Date(b) - new Date(a));
+  // Format and sort the previous dates in descending order
+  const previousDates = location.state?.previousDates || [];
+  const sortedDates = previousDates
+    .map(date => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    })
+    .sort((a, b) => new Date(b) - new Date(a)); // Sort in descending order
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -93,11 +99,17 @@ const SubscriptionDetails = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedDates.map((date, index) => (
-                  <tr key={index} className="border-b border-gray-700">
-                    <td className="py-2 px-4 text-sm text-gray-300">{date}</td>
+                {sortedDates.length > 0 ? (
+                  sortedDates.map((date, index) => (
+                    <tr key={index} className="border-b border-gray-700">
+                      <td className="py-2 px-4 text-sm text-gray-300">{date}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="py-2 px-4 text-sm text-gray-300">No previous payment dates available.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -106,7 +118,7 @@ const SubscriptionDetails = () => {
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
           <h2 className="text-2xl font-semibold mb-4">Upcoming Payment</h2>
           <p className="text-gray-300">
-            Next Payment: <span className="text-purple-400">{subscriptionDetails.Estimated_Next}</span>
+            Next Payment: <span className="text-purple-400">{new Date(subscriptionDetails.Estimated_Next).toISOString().split('T')[0]}</span>
           </p>
           <h2 className="text-2xl font-semibold mt-4">Total Spent</h2>
           <p className="text-3xl text-purple-400">${totalSpent.toFixed(2)}</p>

@@ -1,20 +1,26 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Link, useNavigate } from "react-router-dom";
-import { FileContext } from "../context/FileContext"; // Import the FileContext
+import { FileContext } from "../context/FileContext";
+import { SubscriptionContext } from "../context/SubscriptionContext"; // Import the SubscriptionContext
 
 // Register the necessary components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [totalSpent, setTotalSpent] = useState(0);
-  const { fileId, setFileId } = useContext(FileContext); // Use the FileContext
+  const { subscriptions, setSubscriptions, totalSpent, setTotalSpent } = useContext(SubscriptionContext); // Use the SubscriptionContext
+  const { fileId, setFileId } = useContext(FileContext);
   const navigate = useNavigate();
 
+  const [timeRange, setTimeRange] = useState('Monthly'); // State to manage time range selection
+  const [selectedMonth, setSelectedMonth] = useState(''); // State to manage selected month
+
+  // Extract unique months from subscriptions
+  const availableMonths = [...new Set(subscriptions.map(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' })))];
+
   useEffect(() => {
-    if (!fileId) return; // Do nothing if fileId is not set
+    if (!fileId) return;
 
     const fetchSubscriptions = async () => {
       try {
@@ -33,7 +39,7 @@ const Dashboard = () => {
     };
 
     fetchSubscriptions();
-  }, [fileId]); // Fetch subscriptions whenever fileId changes
+  }, [fileId, setSubscriptions, setTotalSpent]);
 
   const handleDelete = async (description, amount, date) => {
     try {
@@ -82,6 +88,20 @@ const Dashboard = () => {
     }
   };
 
+  const fetchPreviousDates = async (description, amount) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/subscriptions/filter/${fileId}?description=${encodeURIComponent(description)}&price=${amount}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const filteredSubscriptions = await response.json();
+      return filteredSubscriptions.flatMap(sub => sub.Dates);
+    } catch (error) {
+      console.error("Error fetching previous dates:", error);
+      return [];
+    }
+  };
+
   const handleDescriptionClick = async (description, amount, dates) => {
     console.log("Description:", description);
     console.log("Amount:", amount);
@@ -93,45 +113,68 @@ const Dashboard = () => {
     console.log("Request Body:", requestBody);
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/generate-subscription-info", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-        });
+      const response = await fetch("http://127.0.0.1:8000/generate-subscription-info", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-        if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
-            const errorText = await response.text();
-            console.error("Error response text:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+      if (!response.ok) {
+        console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("Error response text:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        const data = await response.json();
-        console.log("API Response Data:", data);
+      const data = await response.json();
+      console.log("API Response Data:", data);
 
-        // Navigate with the generated info
-        navigate(`/subscription/${fileId}/${encodeURIComponent(description)}/${amount}`, { state: { generatedInfo: data } });
+      // Fetch previous dates
+      const previousDates = await fetchPreviousDates(description, amount);
+
+      // Navigate with the generated info and previous dates
+      navigate(`/subscription/${fileId}/${encodeURIComponent(description)}/${amount}`, { state: { generatedInfo: data, previousDates } });
     } catch (error) {
-        console.error("Error generating subscription info:", error);
+      console.error("Error generating subscription info:", error);
     }
   };
 
-  const data = {
-    labels: subscriptions.map(sub => sub.Date),
+  // Function to handle time range change
+  const handleTimeRangeChange = (event) => {
+    setTimeRange(event.target.value);
+    if (event.target.value !== 'Monthly') {
+      setSelectedMonth(''); // Reset month selection if not monthly
+    }
+  };
+
+  // Function to handle month change
+  const handleMonthChange = (event) => {
+    setSelectedMonth(event.target.value);
+  };
+
+  // Prepare data for the chart based on the selected time range and month
+  const filteredSubscriptions = timeRange === 'Monthly' && selectedMonth
+    ? subscriptions.filter(sub => new Date(sub.Date).toLocaleString('default', { month: 'long', year: 'numeric' }) === selectedMonth)
+    : subscriptions;
+
+  const chartData = {
+    labels: filteredSubscriptions.map(sub => sub.Date),
     datasets: [
       {
         label: 'Spending',
-        data: subscriptions.map(sub => sub.Amount),
+        data: filteredSubscriptions.map(sub => sub.Amount),
         backgroundColor: 'rgba(99, 102, 241, 0.6)',
         borderColor: 'rgba(99, 102, 241, 1)',
         borderWidth: 1,
+        descriptions: filteredSubscriptions.map(sub => sub.Description),
       },
     ],
   };
 
-  const options = {
+  // Update the chart options based on the time range
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -140,12 +183,21 @@ const Dashboard = () => {
       },
       title: {
         display: true,
-        text: 'Monthly Subscription Spending',
+        text: `${timeRange} Subscription Spending`,
         color: '#fff',
         font: {
           size: 18,
         },
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const description = context.dataset.descriptions[context.dataIndex];
+            const amount = context.raw;
+            return `${description}: $${amount.toFixed(2)}`;
+          }
+        }
+      }
     },
     scales: {
       y: {
@@ -168,6 +220,22 @@ const Dashboard = () => {
     },
   };
 
+  // Calculate upcoming subscriptions
+  const upcomingSubscriptions = subscriptions
+    .map(sub => {
+      const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
+      return { ...sub, daysAway };
+    })
+    .filter(sub => sub.daysAway >= 0)
+    // Filter out duplicates based on Description
+    .filter((sub, index, self) => 
+      index === self.findIndex((s) => s.Description === sub.Description)
+    )
+    .sort((a, b) => a.daysAway - b.daysAway);
+
+  // Sort subscriptions by date in descending order
+  const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="flex justify-between items-center mb-8">
@@ -177,7 +245,25 @@ const Dashboard = () => {
         </h1>
 
         {/* File Upload */}
-        <input type="file" onChange={handleFileUpload} className="text-gray-300" />
+        <div className="relative">
+          <input 
+            type="file" 
+            onChange={handleFileUpload} 
+            className="hidden" 
+            id="file-upload" 
+          />
+          <label 
+            htmlFor="file-upload" 
+            className="cursor-pointer bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
+            text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 
+            flex items-center space-x-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Upload Statement</span>
+          </label>
+        </div>
       </div>
 
       {/* Content Container */}
@@ -197,7 +283,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {subscriptions.map((sub) => (
+                {sortedSubscriptions.map((sub) => (
                   <tr key={`${sub.Description}-${sub.Amount}-${sub.Date}`} className="border-b border-gray-700 hover:bg-gray-750 transition-colors duration-200">
                     <td className="py-4 px-6 text-sm font-medium text-gray-300">
                       <button onClick={() => handleDescriptionClick(sub.Description, sub.Amount, sub.Dates)}>
@@ -227,11 +313,51 @@ const Dashboard = () => {
 
         {/* Chart Section */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-semibold text-gray-300 mb-6">Monthly Spending</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-300">{timeRange} Spending</h2>
+            <div className="flex space-x-4">
+              {/* Time Range Dropdown */}
+              <select
+                value={timeRange}
+                onChange={handleTimeRangeChange}
+                className="bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200"
+              >
+                <option value="Monthly">Monthly</option>
+                <option value="Yearly">Yearly</option>
+              </select>
+
+              {/* Month Selector (only show if Monthly is selected) */}
+              {timeRange === 'Monthly' && (
+                <select
+                  value={selectedMonth}
+                  onChange={handleMonthChange}
+                  className="bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200"
+                >
+                  <option value="">Select Month</option>
+                  {availableMonths.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
           <div style={{ height: '500px' }}> {/* Fixed height for the chart */}
-            <Bar data={data} options={options} />
+            <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
+      </div>
+
+      {/* Upcoming Subscriptions Section */}
+      <div className="mt-8 bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-semibold text-gray-300 mb-6">Upcoming Subscriptions</h2>
+        <ul>
+          {upcomingSubscriptions.map((sub, index) => (
+            <li key={index} className="mb-4">
+              <p className="text-lg text-purple-400">{sub.Description}</p>
+              <p className="text-gray-300">Next Payment: {sub.Estimated_Next} ({sub.daysAway} days away)</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
