@@ -11,7 +11,58 @@ const Groups = () => {
   const [selectedGroupName, setSelectedGroupName] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [memberRatios, setMemberRatios] = useState({});
+  const [isEditingRatios, setIsEditingRatios] = useState(false);
   const navigate = useNavigate();
+
+  const fetchGroupRatios = async (groupId) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/ratios`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch group ratios');
+      const data = await response.json();
+      const ratioMap = {};
+      data.ratios.forEach(ratio => {
+        ratioMap[ratio.user_id] = ratio.ratio_percentage;
+      });
+      setMemberRatios(ratioMap);
+    } catch (err) {
+      setError('Failed to load group ratios');
+    }
+  };
+
+  const updateGroupRatios = async (groupId) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const ratios = Object.entries(memberRatios).map(([user_id, ratio_percentage]) => ({
+        user_id: parseInt(user_id),
+        ratio_percentage: parseFloat(ratio_percentage)
+      }));
+
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/ratios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ratios }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update ratios');
+      }
+
+      setSuccess('Payment ratios updated successfully!');
+      setIsEditingRatios(false);
+    } catch (err) {
+      setError(err.message || 'Failed to update ratios');
+    }
+  };
 
   const fetchGroups = async () => {
     try {
@@ -226,6 +277,8 @@ const Groups = () => {
                       const members = await response.json();
                       setSelectedGroupMembers(members);
                       setSelectedGroupName(group.group_name);
+                      setSelectedGroupId(group.id);
+                      fetchGroupRatios(group.id);
                     } catch (err) {
                       setError('Failed to load group members');
                     }
@@ -243,19 +296,72 @@ const Groups = () => {
           {/* Selected Group Members */}
           {selectedGroupMembers && (
             <div className="mt-6 bg-gray-700 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-3">{selectedGroupName} - Members</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">{selectedGroupName} - Members</h3>
+                {groups.find(g => g.id === selectedGroupId)?.is_admin && (
+                  <div className="flex space-x-2">
+                    {isEditingRatios ? (
+                      <>
+                        <button
+                          onClick={() => updateGroupRatios(selectedGroupId)}
+                          className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded"
+                        >
+                          Save Ratios
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingRatios(false);
+                            fetchGroupRatios(selectedGroupId);
+                          }}
+                          className="px-3 py-1 text-sm bg-gray-600 hover:bg-gray-700 rounded"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditingRatios(true)}
+                        className="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 rounded"
+                      >
+                        Edit Ratios
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
                 {selectedGroupMembers.map((member) => (
                   <div key={member.id} className="flex items-center justify-between p-2 rounded bg-gray-600">
-                    <div>
+                    <div className="flex-grow">
                       <p className="font-medium">{member.username}</p>
                       <p className="text-sm text-gray-400">
                         {member.first_name} {member.last_name}
                       </p>
                     </div>
-                    <span className="px-2 py-1 text-xs rounded bg-gray-500">
-                      {member.is_admin ? 'Admin' : 'Member'}
-                    </span>
+                    <div className="flex items-center space-x-4">
+                      {isEditingRatios ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={memberRatios[member.id] || 0}
+                          onChange={(e) => {
+                            const newRatios = { ...memberRatios };
+                            newRatios[member.id] = e.target.value;
+                            setMemberRatios(newRatios);
+                          }}
+                          className="w-20 px-2 py-1 text-sm rounded bg-gray-700 text-white"
+                        />
+                      ) : (
+                        <span className="px-2 py-1 text-sm rounded bg-gray-700">
+                          {memberRatios[member.id] || 0}%
+                        </span>
+                      )}
+                      <span className="px-2 py-1 text-xs rounded bg-gray-500">
+                        {member.is_admin ? 'Admin' : 'Member'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

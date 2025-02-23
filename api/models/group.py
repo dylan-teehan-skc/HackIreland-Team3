@@ -10,4 +10,5 @@ class Group(Base):
     admin_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
     admin = relationship("User", back_populates="groups")
-    virtual_card = relationship("VirtualCard", uselist=False, back_populates="group") 
+    virtual_card = relationship("VirtualCard", uselist=False, back_populates="group")
+    members = relationship("User", secondary="group_invitations", primaryjoin="and_(Group.id == GroupInvitation.group_id, GroupInvitation.accepted == True)", secondaryjoin="GroupInvitation.invitee_id == User.id", viewonly=True)

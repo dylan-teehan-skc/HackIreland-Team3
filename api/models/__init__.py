@@ -6,3 +6,4 @@ from .card_member import CardMember
 from .real_card import RealCard
 from .group_invitation import GroupInvitation
 from .subscription import Subscription
+from .group_member_ratio import GroupMemberRatio
