@@ -38,7 +38,7 @@ What you learned:
 
 
 
-Future work:
+Future work (Future Vision):
 We aim to make this into a browswer extension.
 
 
