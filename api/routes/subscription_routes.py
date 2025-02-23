@@ -37,6 +37,9 @@ class SubscriptionSchema(SubscriptionBaseSchema):
     user_id: int
     group_id: Optional[int] = None
 
+class AddToGroupRequest(BaseModel):
+    group_id: int
+
 router = APIRouter(
     prefix="/subscriptions",
     tags=["Subscriptions"],
@@ -58,6 +61,7 @@ async def get_or_create_subscription(
     This ensures we always have a subscription record for matching criteria.
     """
     try:
+        print("get_or_create_subscription")
         # Try to find existing subscription
         subscription = db.query(SubscriptionModel).filter(
             SubscriptionModel.user_id == user_id,
@@ -73,8 +77,21 @@ async def get_or_create_subscription(
             # Get the most recent file_id for the user
             latest_file = db.query(UploadedFile).filter(
                 UploadedFile.user_id == user_id
-            ).order_by(UploadedFile.upload_date.desc()).first()
-            file_id = latest_file.id if latest_file else None
+            ).order_by(UploadedFile.created_at.desc()).first()
+            
+            if latest_file:
+                file_id = latest_file.id
+            else:
+                # Create a placeholder file if none exists
+                new_file = UploadedFile(
+                    file_name="placeholder.csv",
+                    file_content=b"",
+                    file_path="/tmp/placeholder.csv",
+                    user_id=user_id
+                )
+                db.add(new_file)
+                db.flush()
+                file_id = new_file.id
 
         if not date:
             date = datetime.now().date()
@@ -386,24 +403,35 @@ async def create_subscriptions(subscriptions: List[SubscriptionCreateSchema], db
         logger.error(f"Error creating subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail="Error creating subscriptions")
 
-@router.post("/subscriptions/{subscription_id}/add-to-group")
-async def add_subscription_to_group(subscription_id: int, group_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    print("does it even reach here")
+@router.post("/{subscription_id}/add-to-group")
+async def add_subscription_to_group(
+    subscription_id: int,
+    request: AddToGroupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Add a subscription to a group"""
+    print("Request received:", subscription_id, request.group_id)
 
-    subscription = db.query(SubscriptionModel).filter(SubscriptionModel.id == subscription_id).first()
+    subscription = db.query(SubscriptionModel).filter(
+        SubscriptionModel.id == subscription_id,
+        SubscriptionModel.user_id == current_user.id  # Ensure user owns the subscription
+    ).first()
     
-    print("=========================== - ", subscription)
-
     if not subscription:
         logger.warning(f"Subscription not found for id: {subscription_id}")
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    group = db.query(Group).filter(Group.id == group_id).first()
+    group = db.query(Group).filter(
+        Group.id == request.group_id,
+        Group.admin_id == current_user.id  # Ensure user is group admin
+    ).first()
+    
     if not group:
-        logger.warning(f"Group not found for id: {group_id}")
+        logger.warning(f"Group not found for id: {request.group_id}")
         raise HTTPException(status_code=404, detail="Group not found")
 
-    subscription.group_id = group_id
+    subscription.group_id = request.group_id
     db.commit()
     db.refresh(subscription)
     return {"message": "Subscription added to group successfully"}
@@ -417,6 +445,7 @@ async def find_subscription(
 ):
     """Find a subscription by description and amount, creating it if it doesn't exist."""
     try:
+        print("find_subscription")
         subscription = await get_or_create_subscription(
             db=db,
             user_id=current_user.id,

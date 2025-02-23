@@ -10,6 +10,7 @@ const Groups = () => {
   const [selectedGroupMembers, setSelectedGroupMembers] = useState(null);
   const [selectedGroupName, setSelectedGroupName] = useState(null);
   const [selectedGroupVirtualCard, setSelectedGroupVirtualCard] = useState(null);
+  const [selectedGroupSubscriptions, setSelectedGroupSubscriptions] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [memberRatios, setMemberRatios] = useState({});
@@ -97,6 +98,22 @@ const Groups = () => {
     }
   };
 
+  const fetchGroupSubscriptions = async (groupId) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/subscriptions`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch group subscriptions');
+      const data = await response.json();
+      setSelectedGroupSubscriptions(data);
+    } catch (err) {
+      setError('Failed to load group subscriptions');
+    }
+  };
+
   const handleGroupClick = async (groupId, groupName) => {
     setSelectedGroupId(groupId);
     setSelectedGroupName(groupName);
@@ -136,6 +153,9 @@ const Groups = () => {
       
       // Fetch group ratios
       await fetchGroupRatios(groupId);
+
+      // Fetch group subscriptions
+      await fetchGroupSubscriptions(groupId);
       
     } catch (err) {
       console.error('Error fetching group details:', err);
@@ -358,6 +378,32 @@ const Groups = () => {
                       <p className="font-medium capitalize">{selectedGroupVirtualCard.card_details.type}</p>
                     </div>
                   </div>
+                </div>
+              )}
+              
+              {/* Group Subscriptions */}
+              {selectedGroupSubscriptions && (
+                <div className="mb-6 bg-gray-800 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-3 text-purple-400">Group Subscriptions</h4>
+                  {selectedGroupSubscriptions.length === 0 ? (
+                    <p className="text-gray-400">No subscriptions in this group yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedGroupSubscriptions.map((subscription) => (
+                        <div key={subscription.id} className="bg-gray-700 p-3 rounded flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{subscription.description}</p>
+                            <p className="text-sm text-gray-400">
+                              Next payment: {new Date(subscription.estimated_next_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-green-400">€{subscription.amount.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               

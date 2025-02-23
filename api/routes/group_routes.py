@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, validator
 from datetime import datetime
 
-from ..models import User, Group, VirtualCard, CardMember, GroupInvitation
+from ..models import User, Group, VirtualCard, CardMember, GroupInvitation, Subscription
 from ..auth import get_current_active_user
 from ..database import get_db
 from ..services.cardCreation import create_cardholder, create_virtual_card, get_virtual_card
@@ -499,6 +499,50 @@ async def get_group_card_details(
             'type': card_data['card'].get('type', 'debit')
         }
     }
+
+class SubscriptionResponse(BaseModel):
+    id: int
+    description: str
+    amount: float
+    date: datetime
+    estimated_next_date: Optional[datetime]
+
+@router.get('/{group_id}/subscriptions', response_model=List[SubscriptionResponse])
+async def get_group_subscriptions(
+    group_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"Fetching subscriptions for group {group_id}")
+    
+    # Check if group exists and user is a member
+    group = db.query(Group).get(group_id)
+    if not group:
+        logger.warning(f"Group {group_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Group not found'
+        )
+    
+    # Check if user is a member of the group
+    is_member = db.query(CardMember).join(VirtualCard).filter(
+        VirtualCard.group_id == group_id,
+        CardMember.user_id == current_user.id
+    ).first()
+    
+    if not is_member:
+        logger.warning(f"User {current_user.id} is not a member of group {group_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Not a member of this group'
+        )
+    
+    # Get all subscriptions for the group
+    subscriptions = db.query(Subscription).filter(
+        Subscription.group_id == group_id
+    ).all()
+    
+    return subscriptions
 
 @router.delete('/{group_id}', status_code=status.HTTP_200_OK)
 async def delete_group(
