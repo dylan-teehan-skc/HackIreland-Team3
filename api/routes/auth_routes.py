@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, date
 from typing import Dict, Optional
 from pydantic import BaseModel
+import stripe
+from api.config import settings
 
 from api.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -94,6 +96,27 @@ async def register_user(
         phone_number=user_data.phone_number
     )
     
+    # Create Stripe customer
+    try:
+        customer = stripe.Customer.create(
+            email=user_data.email,
+            name=f"{user_data.legal_name.first_name} {user_data.legal_name.last_name}",
+            phone=user_data.phone_number,
+            address={
+                'line1': user_data.address_line1,
+                'city': user_data.city,
+                'state': user_data.state,
+                'postal_code': user_data.postal_code,
+                'country': user_data.country,
+            } if user_data.address_line1 else None
+        )
+        new_user.stripe_customer_id = customer.id
+    except stripe.error.StripeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create Stripe customer: {str(e)}"
+        )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

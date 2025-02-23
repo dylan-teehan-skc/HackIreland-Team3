@@ -12,6 +12,7 @@ class User(Base):
     country = Column(String, nullable=True, default='US')
     phone_number = Column(String, nullable=True)
     card_holder_id = Column(String, nullable=True)
+    stripe_customer_id = Column(String, unique=True, nullable=True)
 
     __tablename__ = 'users'
 
