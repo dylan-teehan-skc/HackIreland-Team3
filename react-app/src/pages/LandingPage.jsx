@@ -115,6 +115,32 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
+      
+
+        <div className="relative p-8 bg-gray-800 rounded-lg shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-10 rounded-lg -z-10"></div>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1 order-2 md:order-1">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-1 rounded-lg">
+                <div className="bg-gray-900 p-6 rounded-lg">
+                  <img
+                    src={Placeholder}
+                    alt="Split Expenses"
+                    className="rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 order-1 md:order-2">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+                Our Stripe API Integration
+              </h2>
+              <p className="text-lg text-gray-300">
+                Our Stripe API Integration lets you seamlessly add a virtual card, split payments, and create set ratios for subscription splits. It's convenient, quick, and secure.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="absolute w-64 h-64 bg-purple-600 rounded-full opacity-20 blur-3xl animate-blob animation-delay-2000 -top-32 -left-32"></div>

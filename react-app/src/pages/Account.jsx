@@ -5,11 +5,11 @@ const Account = () => {
   const [userDetails, setUserDetails] = useState({ username: '', email: '', first_name: '', last_name: '', middle_name: '', date_of_birth: '', address_line1: '', city: '', state: '', postal_code: '', country: '', phone_number: '', username: '' });
   const [error, setError] = useState("");
   const [hasCard, setHasCard] = useState(false);
-  const navigate = useNavigate(); // Add this line
+  const navigate = useNavigate();
 
   const handleSignOut = () => {
     localStorage.removeItem("access_token");
-    navigate("/"); // Use the navigate function
+    navigate("/"); 
   };
 
   useEffect(() => {

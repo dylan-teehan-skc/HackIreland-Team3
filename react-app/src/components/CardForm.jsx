@@ -47,7 +47,6 @@ const CardForm = ({ onSuccess }) => {
         return;
       }
 
-      // Call backend API to save the card
       const response = await fetch('http://localhost:8000/real-cards/', {
         method: 'POST',
         headers: {

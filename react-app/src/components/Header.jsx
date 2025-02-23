@@ -31,7 +31,7 @@ const Header = () => {
 
   const handleSignOut = () => {
     localStorage.removeItem("access_token");
-    navigate("/"); // Redirect to home or login page after sign out
+    navigate("/");
   };
 
   return (

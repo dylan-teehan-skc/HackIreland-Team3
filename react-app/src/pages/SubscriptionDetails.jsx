@@ -49,7 +49,6 @@ const SubscriptionDetails = () => {
       }
     };
 
-    // If we have subscription details but no ID, fetch/create it
     if (subscriptionDetails && !subscriptionDetails.id) {
       fetchSubscriptionId();
     }
@@ -90,27 +89,26 @@ const SubscriptionDetails = () => {
   }, [location.state]);
 
   useEffect(() => {
-    // Fetch available groups
     const fetchGroups = async () => {
       try {
-        const token = localStorage.getItem('access_token'); // Get the token from local storage
+        const token = localStorage.getItem('access_token'); 
         const response = await fetch('http://127.0.0.1:8000/groups', {
           headers: {
-            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+            'Authorization': `Bearer ${token}`,
           },
         });
         const data = await response.json();
-        console.log('Fetched groups:', data); // Log the fetched groups data
-        console.log(data); // Added console log to inspect the groups data
+        console.log('Fetched groups:', data);
+        console.log(data); 
         if (Array.isArray(data)) {
           setGroups(data);
         } else {
           console.error('Unexpected data format:', data);
-          setGroups([]); // Fallback to an empty array
+          setGroups([]); 
         }
       } catch (error) {
         console.error('Error fetching groups:', error);
-        setGroups([]); // Ensure groups is an array even if the fetch fails
+        setGroups([]); 
       }
     };
 
@@ -144,7 +142,7 @@ const SubscriptionDetails = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          group_id: parseInt(selectedGroup) // Ensure group_id is sent as a number
+          group_id: parseInt(selectedGroup) 
         }),
       });
 
@@ -155,11 +153,9 @@ const SubscriptionDetails = () => {
 
       const result = await response.json();
       console.log('Successfully added subscription to group:', result);
-      // Show success message
       alert('Successfully added subscription to group!');
     } catch (error) {
       console.error('Error adding subscription to group:', error);
-      // Show error message
       alert(`Failed to add subscription to group: ${error.message}`);
     }
   };
@@ -171,7 +167,6 @@ const SubscriptionDetails = () => {
   const generatedInfo = location.state?.generatedInfo || {};
   const { cancellation_link, alternatives } = generatedInfo;
 
-  // Format and sort the previous dates in descending order
   const previousDates = location.state?.previousDates || [];
   const sortedDates = previousDates
     .map(date => {
@@ -181,7 +176,7 @@ const SubscriptionDetails = () => {
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     })
-    .sort((a, b) => new Date(b) - new Date(a)); // Sort in descending order
+    .sort((a, b) => new Date(b) - new Date(a)); 
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
