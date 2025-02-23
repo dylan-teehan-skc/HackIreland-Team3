@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const Account = () => {
   const [userDetails, setUserDetails] = useState(null);
@@ -49,6 +50,13 @@ const Account = () => {
           <p><strong>Date of Birth:</strong> {userDetails.date_of_birth}</p>
           <p><strong>Address:</strong> {userDetails.address_line1}, {userDetails.city}, {userDetails.state}, {userDetails.postal_code}, {userDetails.country}</p>
           <p><strong>Phone Number:</strong> {userDetails.phone_number}</p>
+          
+          <Link 
+            to="/add-card" 
+            className="mt-4 block w-full text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Add Payment Card
+          </Link>
         </div>
       </div>
     </div>
