@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
-from typing import Dict
+from datetime import timedelta, date
+from typing import Dict, Optional
+from pydantic import BaseModel
 
 from api.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -34,37 +35,63 @@ async def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.name}, expires_delta=access_token_expires
+        data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+class LegalName(BaseModel):
+    first_name: str
+    last_name: str
+    middle_name: Optional[str] = None
+
+class UserRegistration(BaseModel):
+    username: str
+    email: str
+    password: str
+    legal_name: LegalName
+    date_of_birth: date
+    address_line1: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = 'US'
+    phone_number: Optional[str] = None
+
 @router.post("/register", response_model=Dict[str, str])
 async def register_user(
-    username: str,
-    email: str,
-    password: str,
+    user_data: UserRegistration,
     db: Session = Depends(get_db)
 ):
-    # Check if name already exists
-    if db.query(User).filter(User.name == username).first():
+    # Check if username already exists
+    if db.query(User).filter(User.username == user_data.username).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered"
         )
     
     # Check if email already exists
-    if db.query(User).filter(User.email == email).first():
+    if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
         
     # Create new user with hashed password
-    hashed_password = get_password_hash(password)
+    hashed_password = get_password_hash(user_data.password)
     new_user = User(
-        name=username,
-        email=email,
-        hashed_password=hashed_password
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=hashed_password,
+        first_name=user_data.legal_name.first_name,
+        last_name=user_data.legal_name.last_name,
+        middle_name=user_data.legal_name.middle_name,
+        date_of_birth=user_data.date_of_birth,
+        address_line1=user_data.address_line1,
+        city=user_data.city,
+        state=user_data.state,
+        postal_code=user_data.postal_code,
+        country=user_data.country,
+        phone_number=user_data.phone_number
     )
     
     db.add(new_user)
@@ -74,7 +101,7 @@ async def register_user(
     # Create access token for the new user
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": new_user.name}, expires_delta=access_token_expires
+        data={"sub": new_user.username}, expires_delta=access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}

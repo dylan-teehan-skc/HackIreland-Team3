@@ -7,6 +7,10 @@ from ..models import User, RealCard
 from ..auth import get_current_active_user
 from ..database import get_db
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/real-cards",
     tags=["Real Cards"],
@@ -27,6 +31,9 @@ async def add_real_card(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    # Refresh current user to ensure we have latest state
+    current_user = db.merge(current_user)
+    db.refresh(current_user)
     
     # Check if user already has a real card
     if current_user.real_card:
@@ -42,19 +49,26 @@ async def add_real_card(
             card_holder_name=card_data.card_holder_name,
             expiry_date=card_data.expiry_date
         )
-        db.add(real_card)
-        db.flush()  # Get the real card ID
         
-        # Associate with user
-        current_user.real_card_id = real_card.id
+        # Associate the real card with the current persistent user
+        real_card.user = current_user
+        
+        # Add and commit
+        db.add(real_card)
         db.commit()
+        
+        # Refresh user object to get updated relationships
+        db.refresh(current_user)
+        
+        logger.info(f"User {current_user.id} added real card {real_card.id}")
         
         return {
             'message': 'Real card added successfully',
             'card_holder_name': real_card.card_holder_name
         }
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        logger.error(f"Error adding real card for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Failed to add real card'
@@ -67,10 +81,18 @@ class RealCardResponse(BaseModel):
 
 @router.get('/', response_model=RealCardResponse)
 async def get_real_card(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Get user's real card information"""
-    if not current_user.real_card:
+    # Get fresh user data with relationships
+    user = db.query(User).filter(User.id == current_user.id).first()
+    
+    # Debug information
+    print(f"User ID: {user.id}")
+    print(f"Real Card ID: {user.real_card_id}")
+    
+    if not user.real_card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No real card found'
