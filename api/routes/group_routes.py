@@ -271,6 +271,21 @@ class UserGroup(BaseModel):
     is_admin: bool
     virtual_card_id: str
 
+@router.get('/', response_model=List[UserGroup], status_code=status.HTTP_200_OK)
+async def get_user_groups(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    groups = db.query(Group).filter(Group.admin_id == current_user.id).all()
+    return [
+        UserGroup(
+            id=group.id,
+            group_name=group.name,
+            is_admin=True,
+            virtual_card_id=group.virtual_card_id
+        ) for group in groups
+    ]
+
 @router.get('/my', response_model=List[UserGroup])
 async def get_user_groups(
     current_user: User = Depends(get_current_active_user),

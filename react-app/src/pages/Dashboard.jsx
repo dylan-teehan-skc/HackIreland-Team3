@@ -41,6 +41,7 @@ const Dashboard = () => {
     fetchSubscriptions();
   }, [fileId, setSubscriptions, setTotalSpent]);
 
+  // Calculate projected expenditure for the next month
   const calculateProjectedExpenditure = () => {
     const now = new Date();
     const last30Days = new Date(now.setDate(now.getDate() - 30));
@@ -53,53 +54,17 @@ const Dashboard = () => {
     return previousSubscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
   };
 
-  const upcomingSubscriptions = subscriptions
-    .map(sub => {
-      const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
-      return { ...sub, daysAway };
-    })
-    .filter(sub => sub.daysAway >= 0 && sub.daysAway <= 30)
-    .filter((sub, index, self) => index === self.findIndex(s => s.Description === sub.Description));
-
-  const projectedExpenditure = upcomingSubscriptions.reduce((sum, sub) => sum + sub.Amount, 0);
-
-  const sortedSubscriptions = upcomingSubscriptions.sort((a, b) => b.Amount - a.Amount);
-  const topSubscriptions = sortedSubscriptions.slice(0, 5);
-  const otherAmount = sortedSubscriptions.slice(5).reduce((sum, sub) => sum + sub.Amount, 0);
+  const projectedExpenditure = calculateProjectedExpenditure();
 
   const pieChartData = {
-    labels: [...topSubscriptions.map(sub => sub.Description), ...(otherAmount > 0 ? ['Other'] : [])],
+    labels: subscriptions.map(sub => sub.Description),
     datasets: [
       {
-        label: 'Expenses by Subscription',
-        data: [...topSubscriptions.map(sub => sub.Amount), ...(otherAmount > 0 ? [otherAmount] : [])],
-        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#9ACD32', '#FF6347', '#8A2BE2'],
-        hoverOffset: 4
+        data: subscriptions.map(sub => sub.Amount),
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0'],
+        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0']
       }
     ]
-  };
-
-  const pieChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const description = context.label;
-            const amount = context.raw;
-            return `${description}: $${amount.toFixed(2)}`;
-          }
-        }
-      },
-      title: {
-        display: true,
-        text: 'Predicted Expenses by Subscription',
-        color: '#fff'
-      }
-    }
   };
 
   const handleDelete = async (description, amount, date) => {
@@ -161,6 +126,14 @@ const Dashboard = () => {
       console.error("Error fetching previous dates:", error);
       return [];
     }
+  };
+
+  const handleClearData = () => {
+    setSubscriptions([]);
+    setTotalSpent(0);
+    setFileId(null);
+    setSelectedMonth('');
+    document.getElementById('file-upload').value = ''; // Reset file input
   };
 
   const handleDescriptionClick = async (description, amount, dates) => {
@@ -282,7 +255,6 @@ const Dashboard = () => {
   };
 
   // Calculate upcoming subscriptions
-  /*
   const upcomingSubscriptions = subscriptions
     .map(sub => {
       const daysAway = Math.ceil((new Date(sub.Estimated_Next) - new Date()) / (1000 * 60 * 60 * 24));
@@ -296,7 +268,7 @@ const Dashboard = () => {
     .sort((a, b) => a.daysAway - b.daysAway);
 
   // Sort subscriptions by date in descending order
-  const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date)); */
+  const sortedSubscriptions = [...subscriptions].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -307,7 +279,13 @@ const Dashboard = () => {
         </h1>
 
         {/* File Upload */}
-        <div className="relative">
+        <div className="relative flex space-x-4 items-center">
+          <button
+            onClick={handleClearData}
+            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200"
+          >
+            Clear Data
+          </button>
           <input 
             type="file" 
             onChange={handleFileUpload} 
@@ -341,7 +319,6 @@ const Dashboard = () => {
                   <th className="py-3 px-6 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Amount</th>
                   <th className="py-3 px-6 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Date</th>
                   <th className="py-3 px-6 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Upcoming Payment</th>
-                  <th className="py-3 px-6 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -355,14 +332,6 @@ const Dashboard = () => {
                     <td className="py-4 px-6 text-sm text-gray-300">${sub.Amount.toFixed(2)}</td>
                     <td className="py-4 px-6 text-sm text-gray-300">{sub.Date}</td>
                     <td className="py-4 px-6 text-sm text-gray-300">{sub.Estimated_Next}</td>
-                    <td className="py-4 px-6 text-sm text-gray-300">
-                      <button
-                        onClick={() => handleDelete(sub.Description, sub.Amount, sub.Date)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md transition-colors duration-200"
-                      >
-                        Delete
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -433,9 +402,6 @@ const Dashboard = () => {
           <p className="text-3xl font-bold text-purple-400 mt-4">
             ${projectedExpenditure.toFixed(2)}
           </p>
-          <div style={{ height: '300px', marginTop: '20px' }}>
-            <Pie data={pieChartData} options={pieChartOptions} />
-          </div>
         </div>
       </div>
     </div>

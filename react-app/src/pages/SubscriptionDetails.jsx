@@ -15,7 +15,51 @@ const SubscriptionDetails = () => {
   const [selectedGroup, setSelectedGroup] = useState('');
 
   useEffect(() => {
-    const subscription = subscriptions.find(sub => sub.Description === description && sub.Amount === parseFloat(amount));
+    const fetchSubscriptionId = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          console.error('No access token found');
+          return;
+        }
+
+        // Use the new endpoint that automatically creates subscriptions if they don't exist
+        const response = await fetch(
+          `http://127.0.0.1:8000/subscriptions/find_subscription?description=${encodeURIComponent(subscriptionDetails.Description)}&amount=${subscriptionDetails.Amount}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const subscription = await response.json();
+        
+        setSubscriptionDetails(prev => ({
+          ...prev,
+          id: subscription.id
+        }));
+        
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      }
+    };
+
+    // If we have subscription details but no ID, fetch/create it
+    if (subscriptionDetails && !subscriptionDetails.id) {
+      fetchSubscriptionId();
+    }
+  }, [subscriptionDetails?.Description, subscriptionDetails?.Amount]);
+
+  useEffect(() => {
+    const subscription = subscriptions.find(sub => 
+      sub.Description === description && 
+      sub.Amount === parseFloat(amount)
+    );
     if (subscription) {
       setSubscriptionDetails(subscription);
       setLoading(false);
@@ -49,8 +93,15 @@ const SubscriptionDetails = () => {
     // Fetch available groups
     const fetchGroups = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/groups');
+        const token = localStorage.getItem('access_token'); // Get the token from local storage
+        const response = await fetch('http://127.0.0.1:8000/groups', {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
         const data = await response.json();
+        console.log('Fetched groups:', data); // Log the fetched groups data
+        console.log(data); // Added console log to inspect the groups data
         if (Array.isArray(data)) {
           setGroups(data);
         } else {
@@ -67,7 +118,17 @@ const SubscriptionDetails = () => {
   }, []);
 
   const handleAddToGroup = async () => {
-    if (!selectedGroup) return;
+    if (!selectedGroup) {
+      console.error('No group selected');
+      return;
+    }
+
+    if (!subscriptionDetails?.id) {
+      console.error('No subscription ID available');
+      return;
+    }
+
+    console.log('Attempting to add subscription to group:', { selectedGroup, subscriptionDetails });
 
     try {
       const response = await fetch(`http://127.0.0.1:8000/subscriptions/${subscriptionDetails.id}/add-to-group`, {
@@ -75,16 +136,20 @@ const SubscriptionDetails = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ groupId: selectedGroup }),
+        body: JSON.stringify({ group_id: selectedGroup }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add subscription to group');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      alert('Subscription added to group successfully');
+      const result = await response.json();
+      console.log('Successfully added subscription to group:', result);
+      // Show success message
+      alert('Successfully added subscription to group!');
     } catch (error) {
       console.error('Error adding subscription to group:', error);
+      alert('Failed to add subscription to group. Please try again.');
     }
   };
 
@@ -125,7 +190,7 @@ const SubscriptionDetails = () => {
               <option value="">Select a group</option>
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
-                  {group.name}
+                  {group.group_name}
                 </option>
               ))}
             </select>
