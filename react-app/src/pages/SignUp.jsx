@@ -5,6 +5,16 @@ const SignUp = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("US");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -13,12 +23,28 @@ const SignUp = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/register", {
+      const response = await fetch("http://localhost:8000/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          legal_name: {
+            first_name: firstName,
+            last_name: lastName,
+            middle_name: middleName,
+          },
+          date_of_birth: dateOfBirth,
+          address_line1: addressLine1,
+          city,
+          state,
+          postal_code: postalCode,
+          country,
+          phone_number: phoneNumber,
+        }),
       });
 
       if (!response.ok) {
@@ -78,6 +104,129 @@ const SignUp = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
               required
+            />
+          </div>
+          <div>
+            <label htmlFor="firstName" className="block text-gray-300 mb-2">
+              First Name
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="lastName" className="block text-gray-300 mb-2">
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="middleName" className="block text-gray-300 mb-2">
+              Middle Name
+            </label>
+            <input
+              type="text"
+              id="middleName"
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="dateOfBirth" className="block text-gray-300 mb-2">
+              Date of Birth
+            </label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="addressLine1" className="block text-gray-300 mb-2">
+              Address Line 1
+            </label>
+            <input
+              type="text"
+              id="addressLine1"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="city" className="block text-gray-300 mb-2">
+              City
+            </label>
+            <input
+              type="text"
+              id="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="state" className="block text-gray-300 mb-2">
+              State
+            </label>
+            <input
+              type="text"
+              id="state"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="postalCode" className="block text-gray-300 mb-2">
+              Postal Code
+            </label>
+            <input
+              type="text"
+              id="postalCode"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="country" className="block text-gray-300 mb-2">
+              Country
+            </label>
+            <input
+              type="text"
+              id="country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+            />
+          </div>
+          <div>
+            <label htmlFor="phoneNumber" className="block text-gray-300 mb-2">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              id="phoneNumber"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
             />
           </div>
           <button
