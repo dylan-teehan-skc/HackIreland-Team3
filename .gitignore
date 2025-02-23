@@ -34,3 +34,5 @@ debug.log
 .vscode/
 *.swp
 *.swo
+
+.venv

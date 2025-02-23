@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChopperCare Pro - Dentistry for Butchers</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        :root {
+            --meat-red: #ff6b6b;
+            --tooth-white: #f8f9fa;
+            --butcher-block: #deb887;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--tooth-white);
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: var(--meat-red);
+            color: var(--tooth-white);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .tagline {
+            font-style: italic;
+            color: var(--tooth-white);
+            opacity: 0.9;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .feature-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--butcher-block);
+        }
+        .payment-form {
+            padding: 2rem;
+            background: white;
+            border: 3px solid var(--butcher-block);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #card-element {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid var(--butcher-block);
+            border-radius: 4px;
+            background: var(--tooth-white);
+        }
+        button {
+            background: var(--meat-red);
+            color: var(--tooth-white);
+            padding: 12px 16px;
+            border-radius: 4px;
+            border: 0;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            filter: brightness(110%);
+            transform: scale(1.02);
+        }
+        .price-tag {
+            font-size: 2rem;
+            color: var(--meat-red);
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .spinner {
+            display: none;
+        }
+        .spinner.active {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦷 ChopperCare Pro 🔪</h1>
+        <p class="tagline">Because Butchers Deserve Brilliant Smiles Too!</p>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <h3>🦿 Titanium-Reinforced Cleanings</h3>
+            <p>Strong enough for those who spend all day chomping through bones!</p>
+        </div>
+        <div class="feature-card">
+            <h3>🧊 Cold-Storage Compatible</h3>
+            <p>Our treatments work even in meat locker temperatures!</p>
+        </div>
+        <div class="feature-card">
+            <h3>🥩 Meat-Resistant Coating</h3>
+            <p>Special sealants that resist even the toughest meat particles!</p>
+        </div>
+        <div class="feature-card">
+            <h3>⚡ Quick Appointments</h3>
+            <p>Because time away from the chopping block is money!</p>
+        </div>
+    </div>
+
+    <div class="payment-form">
+        <h2>Subscribe to ChopperCare Pro</h2>
+        <p>Get premium dental care tailored for the meat industry!</p>
+        <div class="price-tag">$199.99/month</div>
+        <ul>
+            <li>24/7 Emergency Dental Support</li>
+            <li>Specialized Meat-Industry Dental Insurance</li>
+            <li>Quarterly Check-ups with Meat-Safe Tools</li>
+            <li>Custom-Fitted Mouth Guards for the Cutting Room</li>
+        </ul>
+        <form id="payment-form">
+            <div id="card-element"></div>
+            <button id="submit">
+                <span id="button-text">Start Chopping with Confidence!</span>
+                <div class="spinner" id="spinner"></div>
+            </button>
+            <div id="payment-message"></div>
+        </form>
+    </div>
+
+    <script>
+        const stripe = Stripe('{{ stripe_public_key }}');
+        const elements = stripe.elements();
+        const card = elements.create('card');
+        card.mount('#card-element');
+
+        const form = document.getElementById('payment-form');
+        const submitButton = document.getElementById('submit');
+        const spinner = document.getElementById('spinner');
+        const messageDiv = document.getElementById('payment-message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            spinner.classList.add('active');
+
+            try {
+                const response = await fetch('/create-payment-intent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                });
+                const data = await response.json();
+
+                const {error: paymentError} = await stripe.confirmCardPayment(
+                    data.clientSecret, {
+                        payment_method: {
+                            card: card,
+                        }
+                    }
+                );
+
+                if (paymentError) {
+                    messageDiv.textContent = paymentError.message;
+                } else {
+                    messageDiv.textContent = 'Payment successful!';
+                }
+            } catch (error) {
+                messageDiv.textContent = 'An unexpected error occurred.';
+            }
+
+            submitButton.disabled = false;
+            spinner.classList.remove('active');
+        });
+    </script>
+</body>
+</html>
