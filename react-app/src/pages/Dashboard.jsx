@@ -56,15 +56,59 @@ const Dashboard = () => {
 
   const projectedExpenditure = calculateProjectedExpenditure();
 
+  const subscriptionMap = new Map();
+
+  subscriptions.forEach(sub => {
+    // Calculate the monthly cost for the subscription
+    let monthlyCost = sub.Amount;
+
+    // If the subscription has a frequency, adjust the cost accordingly
+    if (sub.Frequency === "Yearly") {
+      monthlyCost = sub.Amount / 12; // Convert yearly cost to monthly
+    } else if (sub.Frequency === "Weekly") {
+      monthlyCost = sub.Amount * 4; // Convert weekly cost to monthly (assuming 4 weeks in a month)
+    }
+
+    if (subscriptionMap.has(sub.Description)) {
+      // If the subscription name already exists, add the monthly cost to the existing total
+      subscriptionMap.set(sub.Description, subscriptionMap.get(sub.Description) + monthlyCost);
+    } else {
+      // If the subscription name is new, add it to the map
+      subscriptionMap.set(sub.Description, monthlyCost);
+    }
+  });
+
+  // Convert the map to arrays for the pie chart
+  const uniqueSubscriptionNames = Array.from(subscriptionMap.keys());
+  const monthlyCosts = Array.from(subscriptionMap.values());
+
   const pieChartData = {
-    labels: subscriptions.map(sub => sub.Description),
+    labels: uniqueSubscriptionNames,
     datasets: [
       {
-        data: subscriptions.map(sub => sub.Amount),
+        data: monthlyCosts,
         backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0'],
         hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0']
       }
     ]
+  };
+
+  // Pie chart options (disable legend)
+  const pieChartOptions = {
+    plugins: {
+      legend: {
+        display: false, // Disable the legend
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            return `${label}: $${value.toFixed(2)}`; // Show label and value in tooltip
+          }
+        }
+      }
+    }
   };
 
   const handleDelete = async (description, amount, date) => {
@@ -402,6 +446,10 @@ const Dashboard = () => {
           <p className="text-3xl font-bold text-purple-400 mt-4">
             ${projectedExpenditure.toFixed(2)}
           </p>
+          <h2 className="mt-20 text-2xl font-semibold text-gray-300 mb-6">Projected Expenditure Next Year</h2>
+          <div style={{ height: '300px', marginTop: '20px', marginLeft: '28%' }}>
+            <Pie data={pieChartData} options={pieChartOptions} />
+          </div>
         </div>
       </div>
     </div>
