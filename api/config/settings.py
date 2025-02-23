@@ -4,7 +4,7 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # Load environment variables from .env file
 
 class Settings(BaseSettings):
     # Environment and Debugging
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = os.environ.get("SECRET_KEY", "dev-key-please-change")
+    print('SECRET_KEY', SECRET_KEY)
     
     # Logging Configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     # Stripe Configuration
     STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-    SRIPE_API_KEY: str = os.getenv("STRIPE_API_KEY")
+    STRIPE_API_KEY: str = os.getenv("STRIPE_API_KEY")
     
     # Test Cardholder Configuration
     TEST_CARDHOLDER_ID: str = os.environ.get("TEST_CARDHOLDER_ID", "")
