@@ -4,7 +4,6 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
-import SubscriptionManager from "./pages/SubscriptionManager";
 import SubscriptionDetails from "./pages/SubscriptionDetails";
 import SplitSubscription from "./pages/SplitSubscription";
 import Login from "./pages/Login";
@@ -31,7 +30,6 @@ function App() {
                 <Route path="/add-card" element={<AddCard />} />
                 <Route path="/groups" element={<Groups />} />
                 <Route path="/subscription/:id" element={<SubscriptionDetails />} />
-                <Route path="/subscriptions" element={<SubscriptionManager />} />
                 <Route path="/split-subscription" element={<SplitSubscription />} />
               </Route>
               <Route path="/login" element={<Login />} />
