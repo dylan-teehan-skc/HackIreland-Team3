@@ -23,8 +23,6 @@ Description:
 
 Our application is a user-friendly online tool that makes managing your recurring expenses simple and stress-free. It lets you see all your subscriptions—like streaming services, gym memberships, or software licenses—in one organized place. You'll always know when payments are due, how much each costs, and you'll receive friendly reminders before renewals.
 
-What’s more, our platform offers a unique feature that lets you share the cost of subscriptions with others. Whether you’re splitting a streaming service bill with friends or sharing software expenses at work, you can easily set up group subscriptions with customizable payment splits.
-
 Key benefits include:
 Flexible Sharing: Customize how expenses are divided among friends, family, or colleagues.
 Secure & Reliable: Enjoy a smooth and safe experience every time you log in.
