@@ -147,6 +147,18 @@ async def get_real_card(
         expiry_date=current_user.real_card.expiry_date
     )
 
+@router.get('/has-card', response_model=dict)
+async def check_has_card(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Check if user has a real card"""
+    # Refresh current user to ensure we have latest state
+    current_user = db.merge(current_user)
+    db.refresh(current_user)
+    
+    return {"has_card": bool(current_user.real_card)}
+
 @router.delete('/', status_code=status.HTTP_200_OK)
 async def remove_real_card(
     current_user: User = Depends(get_current_active_user),

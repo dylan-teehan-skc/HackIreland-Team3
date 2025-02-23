@@ -1,6 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
-from api.routes.file_routes import file_storage  # Import the in-memory storage
+from fastapi import APIRouter, HTTPException, Query, Depends
+from sqlalchemy.orm import Session
+from api.routes.file_routes import file_storage
 from api.services.subscription_parser import process_subscriptions, get_subscriptions_sorted_by_date
+from api.database import get_db
+from api.auth import get_current_active_user
+from api.models.subscription import Subscription
+from api.models.user import User
+from api.models.uploaded_file import UploadedFile
 import logging
 import os
 import json
@@ -12,6 +18,110 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 logger = logging.getLogger(__name__)
+
+@router.post("/upload/{file_id}")
+async def create_subscriptions_from_file(
+    file_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create subscriptions from an uploaded file and associate them with the current user."""
+    try:
+        # Get the file path and verify it exists
+        file_path = file_storage.get(file_id)
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+            
+        # Process subscriptions from the file
+        subscriptions_data = process_subscriptions(file_path)
+        
+        # Create UploadedFile record
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+        
+        uploaded_file = UploadedFile(
+            file_name=os.path.basename(file_path),
+            file_content=file_content,
+            file_path=file_path,
+            user_id=current_user.id
+        )
+        db.add(uploaded_file)
+        db.commit()
+        db.refresh(uploaded_file)
+        
+        # Delete any existing subscriptions for this user from this file
+        db.query(Subscription).filter(
+            Subscription.user_id == current_user.id,
+            Subscription.file_id == uploaded_file.id
+        ).delete()
+        
+        # Create new subscription records
+        for sub in subscriptions_data:
+            subscription = Subscription(
+                description=sub["Description"],
+                amount=sub["Amount"],
+                date=datetime.strptime(sub["Dates"][-1], '%Y-%m-%d').date(),
+                estimated_next_date=datetime.strptime(sub["Estimated_Next"], '%Y-%m-%d').date(),
+                user_id=current_user.id,
+                file_id=uploaded_file.id
+            )
+            db.add(subscription)
+        
+        db.commit()
+        return {"message": "Subscriptions created successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error creating subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/user")
+async def get_user_subscriptions(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all subscriptions for the current user."""
+    try:
+        subscriptions = db.query(Subscription).filter(
+            Subscription.user_id == current_user.id
+        ).all()
+        
+        return [{
+            "id": sub.id,
+            "description": sub.description,
+            "amount": sub.amount,
+            "date": sub.date.strftime('%Y-%m-%d'),
+            "estimated_next_date": sub.estimated_next_date.strftime('%Y-%m-%d') if sub.estimated_next_date else None,
+            "file_id": sub.file_id
+        } for sub in subscriptions]
+        
+    except Exception as e:
+        logger.error(f"Error getting user subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{subscription_id}")
+async def delete_subscription(
+    subscription_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a specific subscription."""
+    try:
+        subscription = db.query(Subscription).filter(
+            Subscription.id == subscription_id,
+            Subscription.user_id == current_user.id
+        ).first()
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+            
+        db.delete(subscription)
+        db.commit()
+        
+        return {"message": "Subscription deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/subscriptions/{file_id}", responses={200: {"description": "List of subscriptions", "content": {"application/json": {"example": [{"Description": "POS NETFLIX", "Amount": 15.99, "Dates": ["2025-01-03"], "Estimated_Next": "2025-02-03"}]}}}})
 async def get_subscriptions(file_id: str):

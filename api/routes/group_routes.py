@@ -3,8 +3,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, validator
+from datetime import datetime
 
-from ..models import User, Group, VirtualCard, CardMember
+from ..models import User, Group, VirtualCard, CardMember, GroupInvitation
 from ..auth import get_current_active_user
 from ..database import get_db
 from ..services.cardCreation import create_cardholder, create_virtual_card
@@ -21,6 +22,9 @@ router = APIRouter(
         404: {"description": "Not found"}
     }
 )
+
+class InviteUser(BaseModel):
+    username: str
 
 class GroupCreate(BaseModel):
     name: str
@@ -260,6 +264,126 @@ async def get_user_groups(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+@router.post('/{group_id}/invite')
+async def invite_to_group(
+    group_id: int,
+    invite_data: InviteUser,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # Check if group exists and user is admin
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Group not found'
+        )
+    
+    if group.admin_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only group admin can invite users'
+        )
+    
+    # Find invitee by username
+    invitee = db.query(User).filter(User.username == invite_data.username).first()
+    if not invitee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
+    
+    # Check if user is already in group
+    existing_member = db.query(CardMember).filter(
+        CardMember.user_id == invitee.id,
+        CardMember.card_id == group.virtual_card.id
+    ).first()
+    
+    if existing_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='User is already a member of this group'
+        )
+    
+    # Check if invitation already exists
+    existing_invitation = db.query(GroupInvitation).filter(
+        GroupInvitation.group_id == group_id,
+        GroupInvitation.invitee_id == invitee.id,
+        GroupInvitation.accepted == False
+    ).first()
+    
+    if existing_invitation:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='User has already been invited to this group'
+        )
+    
+    # Create invitation
+    invitation = GroupInvitation(
+        group_id=group_id,
+        inviter_id=current_user.id,
+        invitee_id=invitee.id
+    )
+    
+    db.add(invitation)
+    db.commit()
+    
+    return {'message': f'Invitation sent to {invitee.username}'}
+
+@router.get('/invitations/pending', response_model=List[dict])
+async def get_pending_invitations(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    invitations = db.query(GroupInvitation).filter(
+        GroupInvitation.invitee_id == current_user.id,
+        GroupInvitation.accepted == False
+    ).all()
+    
+    return [{
+        'id': inv.id,
+        'group_name': inv.group.name,
+        'inviter_username': inv.inviter.username,
+        'created_at': inv.created_at.isoformat()
+    } for inv in invitations]
+
+@router.post('/invitations/{invitation_id}/accept')
+async def accept_invitation(
+    invitation_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    invitation = db.query(GroupInvitation).filter(
+        GroupInvitation.id == invitation_id,
+        GroupInvitation.invitee_id == current_user.id,
+        GroupInvitation.accepted == False
+    ).first()
+    
+    if not invitation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Invitation not found or already accepted'
+        )
+    
+    # Add user to group
+    group = invitation.group
+    if not group.virtual_card:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Group does not have a virtual card'
+        )
+    
+    new_member = CardMember(
+        user_id=current_user.id,
+        card_id=group.virtual_card.id
+    )
+    
+    invitation.accepted = True
+    db.add(new_member)
+    db.commit()
+    
+    return {'message': f'Successfully joined group {group.name}'}
 
 @router.delete('/{group_id}', status_code=status.HTTP_200_OK)
 async def delete_group(
