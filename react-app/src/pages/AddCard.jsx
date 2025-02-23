@@ -4,16 +4,14 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import CardForm from '../components/CardForm';
 
-// Initialize Stripe with your publishable key
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const AddCard = () => {
   const navigate = useNavigate();
 
   const handleSuccess = () => {
-    // Show success message and redirect
     alert('Card added successfully!');
-    navigate('/dashboard'); // or wherever you want to redirect
+    navigate('/dashboard');
   };
 
   return (
