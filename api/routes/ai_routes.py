@@ -7,13 +7,10 @@ import json
 from typing import Optional, List
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override="True")
 
 # Get API key from environment variable
-print(os.getenv("OPENAI_API_KEY"))
-openai.api_key = ""
-print(openai.api_key)
-
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Initialize API Router
 router = APIRouter()
 
@@ -73,7 +70,8 @@ async def generate_subscription_info(request: SubscriptionRequest):
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
-            temperature=0.3  # Lower temperature to make responses more deterministic
+            temperature=0.3,  # Lower temperature to make responses more deterministic+
+            api_key=OPENAI_API_KEY
         )
 
         # Log the AI response

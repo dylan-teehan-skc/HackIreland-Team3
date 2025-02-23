@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Account = () => {
   const [userDetails, setUserDetails] = useState(null);
   const [error, setError] = useState("");
   const [hasCard, setHasCard] = useState(false);
+  const navigate = useNavigate(); // Add this line
+
+  const handleSignOut = () => {
+    localStorage.removeItem("access_token");
+    navigate("/"); // Use the navigate function
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("access_token");
-      
+
       try {
         const userResponse = await fetch("http://localhost:8000/auth/me", {
           headers: {
@@ -60,16 +66,34 @@ const Account = () => {
           Your Account
         </h1>
         <div className="space-y-4">
-          <p><strong>Email:</strong> {userDetails.email}</p>
-          <p><strong>First Name:</strong> {userDetails.first_name}</p>
-          <p><strong>Last Name:</strong> {userDetails.last_name}</p>
-          <p><strong>Date of Birth:</strong> {userDetails.date_of_birth}</p>
-          <p><strong>Address:</strong> {userDetails.address_line1}, {userDetails.city}, {userDetails.state}, {userDetails.postal_code}, {userDetails.country}</p>
-          <p><strong>Phone Number:</strong> {userDetails.phone_number}</p>
+          <p>
+            <strong>Email:</strong> {userDetails.email}
+          </p>
+          <p>
+            <strong>First Name:</strong> {userDetails.first_name}
+          </p>
+          <p>
+            <strong>Last Name:</strong> {userDetails.last_name}
+          </p>
+          <p>
+            <strong>Date of Birth:</strong> {userDetails.date_of_birth}
+          </p>
+          <p>
+            <strong>Address:</strong> {userDetails.address_line1}, {userDetails.city}, {userDetails.state}, {userDetails.postal_code}, {userDetails.country}
+          </p>
+          <p>
+            <strong>Phone Number:</strong> {userDetails.phone_number}
+          </p>
         </div>
+        <button
+          onClick={handleSignOut}
+          className="w-full bg-transparent border-2 border-purple-600 text-purple-600 hover:text-white hover:bg-purple-600 font-semibold py-2 px-6 rounded-lg transition duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 mt-6"
+        >
+          Sign Out
+        </button>
       </div>
     </div>
   );
 };
 
-export default Account; 
+export default Account;
