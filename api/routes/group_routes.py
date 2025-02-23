@@ -8,7 +8,7 @@ from datetime import datetime
 from ..models import User, Group, VirtualCard, CardMember, GroupInvitation
 from ..auth import get_current_active_user
 from ..database import get_db
-from ..services.cardCreation import create_cardholder, create_virtual_card
+from ..services.cardCreation import create_cardholder, create_virtual_card, get_virtual_card
 
 import logging
 
@@ -98,32 +98,41 @@ async def create_group(
             
         # Create Stripe virtual card
         card_result = create_virtual_card(cardholder_result["cardholder"].id)
+
         if not card_result["success"]:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Failed to create Stripe virtual card: {card_result["error"]}'
+                detail=f'Failed to create virtual card: {card_result["error"]}'
             )
-            
-        # Create associated virtual card in our database
+
+        # Store virtual card details with the group
+        new_group.virtual_card_id = card_result["card"].id
+        new_group.virtual_card_last4 = card_result["card"].last4
+        new_group.virtual_card_exp_month = card_result["card"].exp_month
+        new_group.virtual_card_exp_year = card_result["card"].exp_year
+        db.add(new_group)
+        db.flush()  # This will assign an ID to new_group
+        
+        # Create virtual card record
         virtual_card = VirtualCard(
-            virtual_card_id=card_result["card"].id,  # Use Stripe card ID
+            virtual_card_id=card_result["card"].id,
             group_id=new_group.id
         )
         db.add(virtual_card)
-        db.flush()  # Flush to assign virtual_card.id
+        db.flush()  # This will assign an ID to virtual_card
         
-        # Add admin as first member
-        member = CardMember(
+        # Add the creator as a member of the group via CardMember
+        card_member = CardMember(
             card_id=virtual_card.id,
             user_id=current_user.id
         )
-        db.add(member)
+        db.add(card_member)
         
         db.commit()
         return {
             'message': 'Group created successfully',
             'group_id': new_group.id,
-            'virtual_card_id': virtual_card.virtual_card_id
+            'virtual_card_id': new_group.virtual_card_id
         }
         
     except IntegrityError as e:
@@ -255,7 +264,7 @@ async def get_user_groups(
                 id=group.id,
                 group_name=group.name,
                 is_admin=group.admin_id == current_user.id,
-                virtual_card_id=group.virtual_card.virtual_card_id
+                virtual_card_id=group.virtual_card_id
             ) for group in groups
         ]
         
@@ -384,6 +393,56 @@ async def accept_invitation(
     db.commit()
     
     return {'message': f'Successfully joined group {group.name}'}
+
+@router.get('/{group_id}/card')
+async def get_group_card_details(
+    group_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # Check if user is a member of the group by joining through virtual_cards
+    member = db.query(CardMember).join(
+        VirtualCard, CardMember.card_id == VirtualCard.id
+    ).filter(
+        VirtualCard.group_id == group_id,
+        CardMember.user_id == current_user.id
+    ).first()
+    
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You are not a member of this group'
+        )
+    
+    # Retrieve the virtual card id associated with the group id
+    virtual_card = db.query(VirtualCard).filter(VirtualCard.group_id == group_id).first()
+    if not virtual_card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Virtual card not found for this group'
+        )
+
+    print(virtual_card.virtual_card_id)
+
+    # Return the virtual card id along with other card details
+    card_data = get_virtual_card(virtual_card.virtual_card_id)
+    if not card_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Group not found'
+        )
+    
+    return {
+        'virtual_card_id': virtual_card.id,
+        'card_details': {
+            'number': card_data['card']['number'],
+            'exp_month': card_data['card']['exp_month'],
+            'exp_year': card_data['card']['exp_year'],
+            'cvc': card_data['card']['cvc'],
+            'status': card_data['card'].get('status', 'active'),
+            'type': card_data['card'].get('type', 'debit')
+        }
+    }
 
 @router.delete('/{group_id}', status_code=status.HTTP_200_OK)
 async def delete_group(

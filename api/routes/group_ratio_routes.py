@@ -31,6 +31,8 @@ class GroupRatios(BaseModel):
 
     @validator('ratios')
     def validate_total_ratio(cls, v):
+        if not v:  # Allow empty list without validation error
+            return v
         total = sum(ratio.ratio_percentage for ratio in v)
         if not (99.99 <= total <= 100.01):  # Allow small floating-point imprecision
             raise ValueError('Total ratio percentages must equal 100%')

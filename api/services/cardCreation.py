@@ -67,7 +67,7 @@ def create_virtual_card(cardholder_id):
 def get_virtual_card(card_id):
     logger.info(f"Retrieving virtual card: {card_id}")
     try:
-        card = stripe.issuing.Card.retrieve(card_id)
+        card = stripe.issuing.Card.retrieve(card_id, expand=['number', 'cvc'])
         logger.info(f"Successfully retrieved virtual card: {card_id}")
         return {"success": True, "card": card}
     except stripe.error.StripeError as e:

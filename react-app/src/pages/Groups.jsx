@@ -9,6 +9,7 @@ const Groups = () => {
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [selectedGroupMembers, setSelectedGroupMembers] = useState(null);
   const [selectedGroupName, setSelectedGroupName] = useState(null);
+  const [selectedGroupVirtualCard, setSelectedGroupVirtualCard] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [memberRatios, setMemberRatios] = useState({});
@@ -93,6 +94,52 @@ const Groups = () => {
       setPendingInvitations(data);
     } catch (err) {
       setError('Failed to load invitations');
+    }
+  };
+
+  const handleGroupClick = async (groupId, groupName) => {
+    setSelectedGroupId(groupId);
+    setSelectedGroupName(groupName);
+    setIsEditingRatios(false);
+    setError(''); // Clear any previous errors
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // Fetch group details including virtual card
+      const groupResponse = await fetch(`http://localhost:8000/groups/${groupId}/card`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!groupResponse.ok) {
+        throw new Error('Failed to fetch group details');
+      }
+      
+      const groupData = await groupResponse.json();
+      setSelectedGroupVirtualCard(groupData);
+      
+      // Fetch group members
+      const membersResponse = await fetch(`http://localhost:8000/groups/${groupId}/members`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!membersResponse.ok) {
+        throw new Error('Failed to fetch group members');
+      }
+      
+      const membersData = await membersResponse.json();
+      setSelectedGroupMembers(membersData);
+      
+      // Fetch group ratios
+      await fetchGroupRatios(groupId);
+      
+    } catch (err) {
+      console.error('Error fetching group details:', err);
+      setError('Failed to load group details');
     }
   };
 
@@ -265,24 +312,7 @@ const Groups = () => {
                 <div
                   key={group.id}
                   className="bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
-                  onClick={async () => {
-                    try {
-                      const token = localStorage.getItem('access_token');
-                      const response = await fetch(`http://localhost:8000/groups/${group.id}/members`, {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
-                      });
-                      if (!response.ok) throw new Error('Failed to fetch group members');
-                      const members = await response.json();
-                      setSelectedGroupMembers(members);
-                      setSelectedGroupName(group.group_name);
-                      setSelectedGroupId(group.id);
-                      fetchGroupRatios(group.id);
-                    } catch (err) {
-                      setError('Failed to load group members');
-                    }
-                  }}
+                  onClick={() => handleGroupClick(group.id, group.group_name)}
                 >
                   <h3 className="font-semibold">{group.group_name}</h3>
                   <p className="text-sm text-gray-400">
@@ -293,78 +323,68 @@ const Groups = () => {
             </div>
           )}
 
-          {/* Selected Group Members */}
-          {selectedGroupMembers && (
-            <div className="mt-6 bg-gray-700 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold">{selectedGroupName} - Members</h3>
-                {groups.find(g => g.id === selectedGroupId)?.is_admin && (
-                  <div className="flex space-x-2">
-                    {isEditingRatios ? (
-                      <>
-                        <button
-                          onClick={() => updateGroupRatios(selectedGroupId)}
-                          className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded"
-                        >
-                          Save Ratios
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsEditingRatios(false);
-                            fetchGroupRatios(selectedGroupId);
-                          }}
-                          className="px-3 py-1 text-sm bg-gray-600 hover:bg-gray-700 rounded"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setIsEditingRatios(true)}
-                        className="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 rounded"
-                      >
-                        Edit Ratios
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                {selectedGroupMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-2 rounded bg-gray-600">
-                    <div className="flex-grow">
-                      <p className="font-medium">{member.username}</p>
-                      <p className="text-sm text-gray-400">
-                        {member.first_name} {member.last_name}
-                      </p>
+          {/* Selected Group Details */}
+          {selectedGroupId && (
+            <div className="mt-6 bg-gray-700 p-6 rounded-lg">
+              <h3 className="text-2xl font-semibold mb-4">{selectedGroupName}</h3>
+              
+              {/* Card Details */}
+              {selectedGroupVirtualCard && selectedGroupVirtualCard.card_details && (
+                <div className="mb-6 bg-gray-800 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-3 text-purple-400">Virtual Card Details</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400">Card Number</p>
+                      <p className="font-medium">{selectedGroupVirtualCard.card_details.number}</p>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      {isEditingRatios ? (
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={memberRatios[member.id] || 0}
-                          onChange={(e) => {
-                            const newRatios = { ...memberRatios };
-                            newRatios[member.id] = e.target.value;
-                            setMemberRatios(newRatios);
-                          }}
-                          className="w-20 px-2 py-1 text-sm rounded bg-gray-700 text-white"
-                        />
-                      ) : (
-                        <span className="px-2 py-1 text-sm rounded bg-gray-700">
-                          {memberRatios[member.id] || 0}%
-                        </span>
-                      )}
-                      <span className="px-2 py-1 text-xs rounded bg-gray-500">
-                        {member.is_admin ? 'Admin' : 'Member'}
-                      </span>
+                    <div>
+                      <p className="text-gray-400">Virtual Card ID</p>
+                      <p className="font-medium">{selectedGroupVirtualCard.virtual_card_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Expiry</p>
+                      <p className="font-medium">{selectedGroupVirtualCard.card_details.exp_month}/{selectedGroupVirtualCard.card_details.exp_year}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">CVV</p>
+                      <p className="font-medium">{selectedGroupVirtualCard.card_details.cvc}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Status</p>
+                      <p className="font-medium capitalize">{selectedGroupVirtualCard.card_details.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Type</p>
+                      <p className="font-medium capitalize">{selectedGroupVirtualCard.card_details.type}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+              
+              {/* Members and Ratios */}
+              {selectedGroupMembers && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-purple-400">Members & Ratios</h4>
+                  <div className="space-y-2">
+                    {selectedGroupMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-3 rounded bg-gray-800">
+                        <div>
+                          <p className="font-medium">{member.username}</p>
+                          <p className="text-sm text-gray-400">{member.first_name} {member.last_name}</p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <span className="px-3 py-1 text-sm rounded bg-purple-600">
+                            {memberRatios[member.id] || 0}%
+                          </span>
+                          <span className="px-2 py-1 text-xs rounded bg-gray-600">
+                            {member.is_admin ? 'Admin' : 'Member'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

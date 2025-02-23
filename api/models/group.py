@@ -8,6 +8,12 @@ class Group(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     admin_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    
+    # Virtual card fields
+    virtual_card_id = Column(String)
+    virtual_card_last4 = Column(String(4))
+    virtual_card_exp_month = Column(Integer)
+    virtual_card_exp_year = Column(Integer)
 
     admin = relationship("User", back_populates="groups")
     virtual_card = relationship("VirtualCard", uselist=False, back_populates="group")
