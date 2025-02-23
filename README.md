@@ -30,12 +30,13 @@ We are using a flask backend with a react front end.
 Challenges faced:
 ... tailwind
 
-
 Accomplishments that you’re proud of:
+=> We allow users to upload statements of their subscription payments and we automatically create insights around our analysis.
 
 What you learned:
 
 Future work:
+We aim to make this into a browswer extension.
 
 
 Description:
