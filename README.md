@@ -1,7 +1,7 @@
 # SUBHUB
 
-# Winner of Stripe track HackIreland 2025 
-# Link to devpost and tutorial -> https://devpost.com/software/team3-subhub
+Winner of Stripe track HackIreland 2025 
+Link to devpost and tutorial -> https://devpost.com/software/team3-subhub
 
 # Inspiration
 Modern life comes with endless subscriptions, but managing them shouldn’t be a chore. From splitting bills with roommates to forgetting payment dates or overpaying for services you barely use, subscription fatigue is real. Traditional solutions leave you drowning in spreadsheets, calendar alerts, and guesswork—costing you time, money, and peace of mind.
