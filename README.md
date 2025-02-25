@@ -1,28 +1,36 @@
-# Team-3
 # SUBHUB
 
-Track:
-Best U21 Team
+# Winner of Stripe track HackIreland 2025 
+# Link to devpost and tutorial -> https://devpost.com/software/team3-subhub
 
-Challenge:
-Stripe 
+# Inspiration
+Modern life comes with endless subscriptions, but managing them shouldn’t be a chore. From splitting bills with roommates to forgetting payment dates or overpaying for services you barely use, subscription fatigue is real. Traditional solutions leave you drowning in spreadsheets, calendar alerts, and guesswork—costing you time, money, and peace of mind.
 
-Plan:
-subscription manager
+# What it does
+Gain instant visibility into every subscription, payment date, and cost. No more surprises—see your entire financial landscape at a glance.
 
-# Inspiration:
+Smart Cost Splitting- Share subscriptions effortlessly with customizable virtual payment cards. Split Netflix with roommates, Spotify with friends, or SaaS tools with coworkers—set rules for who pays what, and let the platform handle the rest.
 
-Difficulty in splitting subscription costs
-Difficult to remember upcoming subscription costs
-Difficulty in tracking and analysing outgoings towards subscriptions
-Difficulty in ensuring you are getting the best/cheapest alternative for a certain software
+Spending Insights & Alerts- Track trends, identify unused services, and get proactive reminders before payments hit. Never miss a renewal—or waste money on subscriptions you’ve outgrown.
 
-(What it does) Our platform achieves:
-Overview: A clear dashboard shows all your subscriptions, costs, and upcoming due dates.
-Virtual card creation to allow flexible sharing: 
-Customize how expenses are divided among friends, family, or colleagues.
-Helps the user analyse their current expenditure accross their subscriprions:
-This solution is designed to simplify your life by keeping your recurring payments organized and making it easier to share expenses, saving you both time and money.
+Cost-Saving Recommendations- Discover cheaper alternatives tailored to your needs. Our algorithm analyzes your usage and suggests better deals, free trials, or bundled offers—so you always get the best value.
 
-Our application is a user-friendly online tool that makes managing your recurring expenses simple and stress-free. It lets you see all your subscriptions—like streaming services, gym memberships, or software licenses—in one organized place. You'll always know when payments are due, how much each costs, and you'll receive friendly reminders before renewals.
+Security- Manage shared payments risk-free with encrypted virtual cards and role-based access. Your data stays private, and your transactions stay secure.
 
+# How we built it
+Our backend is built with Python, using FastAPI to handle APIs quiries. On the frontend, we use React to interact with these APIs. For styling, we reply on Tailwind CSS and ShadCN. We use the Stripe api to create virtual cards and add payment and subscription splitting functionality. Our demo setup runs on Flask, to simulate a real world scenario.
+
+# Challenges we ran into
+versions of tailwind conflicting
+ideation
+endless problems with packages
+Post-celcius sleep
+Issues with StripeAPI
+taiilwind issues
+versioning isssues
+.env files not being recognised
+Accomplishments that we're proud of
+Designing a full stack website within 30 hours - that is applicable to the real world.
+We allow users to upload statements of their subscription payments and we automatically create insights around our analysis. -Networking with others
+What we learned
+We faced issues with version conflicts, package dependencies, and environment variables. This taught us the importance of version control and proper documentation. The importance of logging in code. How to delegate taks to others
